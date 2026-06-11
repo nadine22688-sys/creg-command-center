@@ -1,0 +1,3348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CReg BQMS — Backup Queue Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1B4F8A;
+    --primary-light: #2563B0;
+    --primary-dark: #0F2F56;
+    --accent: #E8453C;
+    --accent-light: #FF6B63;
+    --success: #16A34A;
+    --warning: #D97706;
+    --warning-light: #FEF3C7;
+    --surface: #F8FAFC;
+    --surface2: #F1F5F9;
+    --border: #E2E8F0;
+    --border2: #CBD5E1;
+    --text: #0F172A;
+    --text2: #475569;
+    --text3: #94A3B8;
+    --white: #FFFFFF;
+    --shadow: 0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,.10), 0 4px 6px rgba(0,0,0,.05);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; font-family: var(--font); background: var(--surface); color: var(--text); overflow: hidden; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; height: 100vh; overflow: hidden; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── OFFLINE BANNER ── */
+  #offline-banner {
+    display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: var(--warning); color: var(--white); text-align: center;
+    padding: 8px 16px; font-size: 13px; font-weight: 600; letter-spacing: .3px;
+  }
+  #offline-banner.show { display: block; }
+
+  /* ── LOGIN ── */
+  #screen-login {
+    background: linear-gradient(145deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+    justify-content: center; align-items: center;
+  }
+  .login-card {
+    background: var(--white); border-radius: 20px; padding: 40px 32px;
+    width: 90%; max-width: 400px; box-shadow: var(--shadow-lg);
+    animation: slideUp .4s ease;
+  }
+  .login-logo {
+    text-align: center; margin-bottom: 28px;
+  }
+  .login-logo-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 64px; height: 64px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    margin-bottom: 12px;
+  }
+  .login-logo-badge svg { width: 32px; height: 32px; fill: var(--white); }
+  .login-title { font-size: 22px; font-weight: 700; color: var(--primary-dark); }
+  .login-sub { font-size: 13px; color: var(--text3); margin-top: 4px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; letter-spacing: .4px; text-transform: uppercase; }
+  .form-input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border2);
+    border-radius: var(--radius-sm); font-family: var(--font); font-size: 15px;
+    color: var(--text); background: var(--surface); transition: border .2s, box-shadow .2s;
+    outline: none;
+  }
+  .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(27,79,138,.12); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 13px 20px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+    font-family: var(--font); font-size: 15px; font-weight: 600; transition: all .18s;
+    width: 100%; letter-spacing: .2px;
+  }
+  .btn-primary { background: var(--primary); color: var(--white); }
+  .btn-primary:hover { background: var(--primary-light); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-danger { background: var(--accent); color: var(--white); }
+  .btn-danger:hover { background: var(--accent-light); }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1.5px solid var(--border2); }
+  .btn-ghost:hover { background: var(--surface2); }
+  .btn-success { background: var(--success); color: var(--white); }
+  .btn-sm { padding: 8px 14px; font-size: 13px; width: auto; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .error-msg { color: var(--accent); font-size: 13px; margin-top: 8px; text-align: center; min-height: 18px; }
+
+  /* ── COUNTER SELECT ── */
+  #screen-counter-select {
+    background: linear-gradient(145deg, var(--primary-dark), var(--primary));
+    justify-content: center; align-items: center;
+  }
+  .counter-card {
+    background: var(--white); border-radius: 20px; padding: 32px 24px;
+    width: 90%; max-width: 480px; box-shadow: var(--shadow-lg); animation: slideUp .4s ease;
+  }
+  .counter-card h2 { font-size: 20px; font-weight: 700; color: var(--primary-dark); margin-bottom: 6px; }
+  .counter-card p { font-size: 14px; color: var(--text2); margin-bottom: 20px; }
+  .counter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .counter-btn {
+    padding: 16px 12px; border: 2px solid var(--border2); border-radius: var(--radius-sm);
+    background: var(--surface); cursor: pointer; text-align: center; transition: all .18s;
+    font-family: var(--font);
+  }
+  .counter-btn:hover { border-color: var(--primary); background: #EEF4FF; }
+  .counter-btn.selected { border-color: var(--primary); background: var(--primary); color: var(--white); }
+  .counter-btn .c-name { font-size: 14px; font-weight: 700; }
+  .counter-btn .c-sub { font-size: 12px; opacity: .75; margin-top: 2px; }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--white); border-bottom: 1px solid var(--border);
+    padding: 0 16px; height: 56px; display: flex; align-items: center;
+    justify-content: space-between; flex-shrink: 0; box-shadow: var(--shadow);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .topbar-logo { width: 28px; height: 28px; background: var(--primary); border-radius: 7px; display:flex; align-items:center; justify-content:center; }
+  .topbar-logo svg { width: 16px; height: 16px; fill: white; }
+  .topbar-title { font-size: 15px; font-weight: 700; color: var(--primary-dark); }
+  .topbar-sub { font-size: 11px; color: var(--text3); }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .status-badge {
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    letter-spacing: .3px; text-transform: uppercase;
+  }
+  .badge-active { background: #DCFCE7; color: var(--success); }
+  .badge-break { background: var(--warning-light); color: var(--warning); }
+  .badge-offline { background: #FEE2E2; color: var(--accent); }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 8px; border: none; background: var(--surface2);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .18s;
+  }
+  .icon-btn:hover { background: var(--border); }
+  .icon-btn svg { width: 18px; height: 18px; stroke: var(--text2); fill: none; }
+
+  /* ── ISSUER SCREEN ── */
+  #screen-issuer { background: var(--surface); }
+  .issuer-body { flex: 1; overflow-y: auto; padding: 16px; }
+  .service-section { margin-bottom: 20px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 10px; padding-left: 4px;
+  }
+  .service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .service-btn {
+    background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius);
+    padding: 14px 12px; cursor: pointer; text-align: left; transition: all .18s;
+    font-family: var(--font); box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .service-btn:hover { border-color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .service-btn:active { transform: translateY(0); }
+  .service-btn .sb-prefix {
+    display: inline-block; width: 28px; height: 28px; border-radius: 7px;
+    background: var(--primary); color: var(--white); font-family: var(--mono);
+    font-size: 13px; font-weight: 600; text-align: center; line-height: 28px;
+    margin-bottom: 8px;
+  }
+  .service-btn.cat-pr .sb-prefix { background: var(--accent); }
+  .service-btn.cat-results .sb-prefix { background: var(--success); }
+  .service-btn.cat-payment .sb-prefix { background: var(--warning); }
+  .service-btn.cat-extraction .sb-prefix { background: #7C3AED; }
+  .service-btn .sb-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .service-btn .sb-count { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .service-btn .sb-waiting { 
+    position: absolute; top: 10px; right: 10px; background: var(--accent);
+    color: white; border-radius: 10px; padding: 2px 7px; font-size: 10px; font-weight: 700;
+  }
+  .service-btn .sb-waiting.warn { background: var(--warning); }
+
+  /* Ticket issued overlay */
+  .ticket-overlay {
+    display: none; position: fixed; inset: 0; background: var(--primary-dark);
+    z-index: 1000; flex-direction: column; align-items: center; justify-content: center;
+    animation: fadeIn .25s ease;
+  }
+  .ticket-overlay.show { display: flex; }
+  .ticket-number-display {
+    font-family: var(--mono); font-size: 96px; font-weight: 500;
+    color: var(--white); letter-spacing: 4px; line-height: 1;
+    text-shadow: 0 4px 24px rgba(0,0,0,.3);
+  }
+  .ticket-service-label { font-size: 20px; color: rgba(255,255,255,.7); margin-top: 12px; font-weight: 500; }
+  .ticket-instruction { font-size: 14px; color: rgba(255,255,255,.45); margin-top: 8px; }
+  .ticket-next-btn {
+    margin-top: 48px; background: rgba(255,255,255,.15); border: 2px solid rgba(255,255,255,.3);
+    color: white; padding: 16px 40px; border-radius: 50px; font-family: var(--font);
+    font-size: 16px; font-weight: 600; cursor: pointer; transition: all .18s;
+    backdrop-filter: blur(8px);
+  }
+  .ticket-next-btn:hover { background: rgba(255,255,255,.25); }
+
+  /* ── PSS / MEDTECH SCREEN ── */
+  #screen-pss, #screen-medtech { background: var(--surface); }
+  .pss-layout { flex: 1; display: flex; overflow: hidden; }
+
+  /* Mobile: stacked */
+  .queue-panel {
+    flex: 1; overflow-y: auto; border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .queue-panel-header {
+    padding: 12px 16px; background: var(--white); border-bottom: 1px solid var(--border);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  }
+  .queue-panel-header h3 { font-size: 14px; font-weight: 700; color: var(--text); }
+  .queue-count-badge {
+    background: var(--primary); color: white; border-radius: 12px;
+    padding: 2px 8px; font-size: 11px; font-weight: 700;
+  }
+  .queue-list { flex: 1; overflow-y: auto; }
+  .queue-item {
+    padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--white);
+    cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 12px;
+  }
+  .queue-item:hover { background: #EEF4FF; }
+  .queue-item.selected { background: #EEF4FF; border-left: 3px solid var(--primary); }
+  .queue-item.in-progress { background: #FFF7ED; border-left: 3px solid var(--warning); }
+  /* Queue group headers */
+  .queue-group-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px 4px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border); margin-top: 2px;
+    position: sticky; top: 0; z-index: 1;
+  }
+  .queue-group-header:first-child { margin-top: 0; border-top: none; }
+  .qgh-prefix {
+    font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--white);
+    background: var(--primary); border-radius: 5px; padding: 1px 6px;
+  }
+  .qgh-name { font-size: 12px; font-weight: 700; color: var(--text); flex: 1; }
+  .qgh-counts { display: flex; gap: 6px; align-items: center; }
+  .qgh-waiting { font-size: 11px; font-weight: 600; color: var(--primary); background: #DBEAFE; border-radius: 10px; padding: 1px 7px; }
+  .qgh-icon { font-size: 14px; }
+  .queue-group-header.qgh-cashier { background: #FEF3C7; border-left: 3px solid var(--warning); }
+  .queue-group-header.qgh-cashier .qgh-name { color: var(--warning); }
+  .queue-group-header.qgh-extraction { background: #EDE9FE; border-left: 3px solid #7C3AED; }
+  .queue-item.monitor-only { opacity: .85; cursor: default; background: var(--surface); }
+  .queue-item.monitor-only:hover { background: var(--surface); }
+  .queue-item.monitor-only .qi-num { color: var(--text3); }
+  .queue-group-header.qgh-extraction .qgh-name { color: #7C3AED; }
+  .qgh-inprog  { font-size: 11px; font-weight: 600; color: var(--warning); background: #FEF3C7; border-radius: 10px; padding: 1px 7px; }
+  .qi-num {
+    font-family: var(--mono); font-size: 20px; font-weight: 500;
+    color: var(--primary); min-width: 56px;
+  }
+  .qi-info { flex: 1; }
+  .qi-service { font-size: 13px; font-weight: 600; color: var(--text); }
+  .qi-time { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .qi-wait { font-size: 12px; font-weight: 600; color: var(--warning); }
+  .qi-status {
+    padding: 3px 8px; border-radius: 8px; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .3px;
+  }
+  .st-waiting { background: #DBEAFE; color: #1D4ED8; }
+  .st-progress { background: #FEF3C7; color: #92400E; }
+
+  /* Action panel */
+  .action-panel {
+    width: 100%; background: var(--white); border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0; max-height: 320px; overflow-y: auto;
+  }
+  .active-ticket-display {
+    padding: 16px; border-bottom: 1px solid var(--border); text-align: center;
+  }
+  .atd-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .atd-number {
+    font-family: var(--mono); font-size: 52px; font-weight: 500; color: var(--primary);
+    line-height: 1; margin: 4px 0;
+  }
+  .atd-service { font-size: 13px; color: var(--text2); font-weight: 500; }
+  .atd-timer { font-size: 22px; font-family: var(--mono); color: var(--warning); margin-top: 4px; font-weight: 500; }
+  .atd-number-tappable { cursor:pointer; border-radius:var(--radius); transition:background .2s; padding:4px 12px; display:flex; flex-direction:column; align-items:center; }
+  .atd-number-tappable:hover { background:rgba(27,79,138,.08); }
+  .atd-reannounce-hint { font-size:11px; color:var(--text3); font-weight:500; margin-top:2px; font-family:var(--font); letter-spacing:.2px; }
+  .action-buttons { padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .action-btn {
+    padding: 12px 8px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+    font-family: var(--font); font-size: 13px; font-weight: 700; transition: all .18s;
+    letter-spacing: .2px;
+  }
+  .ab-close { background: #DCFCE7; color: var(--success); }
+  .ab-close:hover { background: var(--success); color: white; }
+  .ab-cancel { background: #FEE2E2; color: var(--accent); }
+  .ab-cancel:hover { background: var(--accent); color: white; }
+  .ab-transfer { background: #EEF4FF; color: var(--primary); }
+  .ab-transfer:hover { background: var(--primary); color: white; }
+  .ab-cancel-transfer { background: #FFF7ED; color: var(--warning); }
+  .ab-cancel-transfer:hover { background: var(--warning); color: white; }
+  .no-active { padding: 24px 16px; text-align: center; color: var(--text3); font-size: 14px; }
+
+  /* Desktop layout override */
+  @media (min-width: 768px) {
+    .pss-layout { flex-direction: row; }
+    .queue-panel { max-width: 420px; border-right: 1px solid var(--border); }
+    .action-panel {
+      width: 340px; border-top: none; border-left: 1px solid var(--border);
+      max-height: none; flex-shrink: 0;
+    }
+    .atd-number { font-size: 72px; }
+    .action-buttons { grid-template-columns: 1fr 1fr; }
+    .service-grid { grid-template-columns: 1fr 1fr 1fr; }
+  }
+
+  /* ── TL DASHBOARD ── */
+  #screen-tl { background: var(--surface); }
+  .tl-tabs {
+    display: flex; background: var(--white); border-bottom: 1px solid var(--border);
+    flex-shrink: 0; overflow-x: auto;
+  }
+  .tl-tab {
+    padding: 14px 18px; font-size: 13px; font-weight: 600; color: var(--text3);
+    border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap;
+    transition: all .18s; background: none; border-top: none; border-left: none; border-right: none;
+    font-family: var(--font);
+  }
+  .tl-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tl-body { flex: 1; overflow-y: auto; padding: 16px; }
+  .tl-panel { display: none; }
+  .tl-panel.active { display: block; }
+
+  /* Summary table */
+  .data-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .data-table th {
+    background: var(--primary); color: white; padding: 10px 12px; font-size: 11px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .5px; text-align: left;
+  }
+  .data-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:nth-child(even) td { background: var(--surface); }
+  .data-table .num { font-family: var(--mono); font-weight: 500; }
+  .data-table .prefix-cell {
+    font-family: var(--mono); font-weight: 700; color: var(--white);
+    background: var(--primary); border-radius: 6px; padding: 2px 7px; display: inline-block;
+    font-size: 12px;
+  }
+
+  /* Counter cards */
+  .counter-cards { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 600px) { .counter-cards { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 900px) { .counter-cards { grid-template-columns: 1fr 1fr 1fr; } }
+
+  .counter-card-live {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow); border-top: 4px solid var(--border2);
+    overflow: hidden; transition: box-shadow .2s;
+  }
+  .counter-card-live.active-counter { border-top-color: var(--success); box-shadow: var(--shadow-md); }
+  .counter-card-live.break-counter  { border-top-color: var(--warning); }
+  .counter-card-live.offline-counter { opacity: .7; }
+
+  /* Card top band */
+  .ccl-band {
+    padding: 12px 16px 10px; display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 8px;
+  }
+  .ccl-counter-label {
+    font-size: 10px; font-weight: 700; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 3px;
+  }
+  .ccl-counter-role {
+    font-size: 10px; color: var(--text3); margin-top: 2px;
+  }
+  .ccl-name { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.2; }
+
+  /* Active ticket hero */
+  .ccl-ticket-hero {
+    margin: 0 16px 12px; padding: 12px 14px;
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border-radius: var(--radius-sm); display: flex; align-items: center;
+    justify-content: space-between; gap: 8px;
+  }
+  .ccl-ticket-hero-num {
+    font-family: var(--mono); font-size: 32px; font-weight: 500;
+    color: var(--white); letter-spacing: 2px; line-height: 1;
+  }
+  .ccl-ticket-hero-info { text-align: right; }
+  .ccl-ticket-hero-svc { font-size: 11px; color: rgba(255,255,255,.7); margin-bottom: 3px; }
+  .ccl-ticket-hero-timer { font-family: var(--mono); font-size: 18px; color: #FCD34D; font-weight: 500; }
+
+  /* No ticket state */
+  .ccl-no-ticket {
+    margin: 0 16px 12px; padding: 10px 14px;
+    background: var(--surface2); border-radius: var(--radius-sm);
+    font-size: 12px; color: var(--text3); text-align: center;
+    font-style: italic;
+  }
+
+  /* Stats row */
+  .ccl-stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    border-top: 1px solid var(--border);
+  }
+  .ccl-stat {
+    text-align: center; padding: 10px 8px;
+    border-right: 1px solid var(--border);
+  }
+  .ccl-stat:last-child { border-right: none; }
+  .ccl-stat-val { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--primary); }
+  .ccl-stat-lbl { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+  /* ── TRANSFER MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 500; align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-sheet {
+    background: var(--white); border-radius: 20px 20px 0 0; width: 100%; max-width: 520px;
+    max-height: 85vh; overflow-y: auto; animation: slideUp .3s ease; padding-bottom: 20px;
+  }
+  .modal-header { padding: 20px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 17px; font-weight: 700; color: var(--text); }
+  .modal-close { width: 32px; height: 32px; border-radius: 50%; background: var(--surface2); border: none; cursor: pointer; font-size: 18px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
+  .transfer-list { padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .transfer-item {
+    padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; transition: all .15s; background: var(--white);
+  }
+  .transfer-item:hover { border-color: var(--primary); background: #EEF4FF; }
+  .ti-prefix { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 3px; }
+  .ti-name { font-size: 12px; font-weight: 600; color: var(--text); }
+
+  /* ── CONFIRM MODAL ── */
+  .confirm-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 600; align-items: center; justify-content: center;
+  }
+  .confirm-modal.show { display: flex; }
+  .confirm-box {
+    background: var(--white); border-radius: var(--radius); padding: 28px 24px;
+    width: 90%; max-width: 360px; animation: fadeIn .2s ease; text-align: center;
+  }
+  .confirm-box h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .confirm-box p { font-size: 14px; color: var(--text2); margin-bottom: 20px; }
+  .confirm-actions { display: flex; gap: 10px; }
+  .confirm-actions .btn { flex: 1; }
+
+  /* ── REPORTS ── */
+  .report-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: flex-end; }
+  .report-filters .form-group { margin-bottom: 0; flex: 1; min-width: 120px; }
+  .report-table-wrap { overflow-x: auto; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  @media (min-width: 600px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+  .stat-card { background: var(--white); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+  .stat-card .sc-val { font-family: var(--mono); font-size: 28px; font-weight: 500; color: var(--primary); }
+  .stat-card .sc-lbl { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+  /* ── ADMIN ── */
+  .admin-section { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .admin-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+  .staff-list { display: flex; flex-direction: column; gap: 8px; }
+  .staff-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .staff-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .staff-info { flex: 1; }
+  .staff-name { font-size: 14px; font-weight: 600; }
+  .staff-role { font-size: 11px; color: var(--text3); }
+  .add-staff-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .add-staff-form { grid-template-columns: 1fr; } }
+
+
+  /* ── QUEUE STATUS BAR ── */
+  .qsb-wrap {
+    background: var(--white); border-bottom: 1px solid var(--border);
+    flex-shrink: 0; position: relative; height: 44px;
+    width: 100%; box-sizing: border-box; overflow: hidden;
+  }
+  .qsb-scroller {
+    position: absolute; inset: 0;
+    overflow-x: auto !important; overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 12px;
+    scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+  }
+  .qsb-scroller::-webkit-scrollbar { height: 4px; }
+  .qsb-scroller::-webkit-scrollbar-track { background: var(--surface2); }
+  .qsb-scroller::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+  .qsb-inner {
+    display: inline-flex; gap: 6px; align-items: center;
+    white-space: nowrap; min-width: max-content; padding-right: 32px;
+  }
+  .qsb-label {
+    font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase;
+    letter-spacing: .5px; margin-right: 4px; white-space: nowrap;
+  }
+  .qsb-item {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px; white-space: nowrap;
+    transition: background .15s;
+  }
+  .qsb-item.qsb-warn { background: #FEF3C7; border-color: var(--warning); }
+  .qsb-item.qsb-alert { background: #FEE2E2; border-color: var(--accent); }
+  .qsb-prefix {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    color: var(--white); background: var(--primary); border-radius: 4px;
+    padding: 1px 5px; line-height: 1.4;
+  }
+  .qsb-item.qsb-cashier .qsb-prefix { background: var(--warning); }
+  .qsb-item.qsb-extraction .qsb-prefix { background: #7C3AED; }
+  .qsb-item.qsb-pr .qsb-prefix { background: var(--accent); }
+  .qsb-item.qsb-results .qsb-prefix { background: var(--success); }
+  .qsb-svc { font-size: 11px; font-weight: 600; color: var(--text2); }
+  .qsb-count { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text); }
+  .qsb-item.qsb-warn .qsb-count { color: var(--warning); }
+  .qsb-item.qsb-alert .qsb-count { color: var(--accent); }
+  .qsb-divider { width: 1px; height: 16px; background: var(--border2); flex-shrink: 0; margin: 0 2px; }
+  /* ── ANIMATIONS ── */
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+  .pulse { animation: pulse 1.5s infinite; }
+
+  /* ── UTILS ── */
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .empty-state { padding: 40px 20px; text-align: center; color: var(--text3); }
+  .empty-state svg { width: 40px; height: 40px; stroke: var(--border2); fill: none; margin-bottom: 10px; }
+  .empty-state p { font-size: 14px; }
+  .card { background: var(--white); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .tag-pr { background: #FEE2E2; color: var(--accent); }
+  .tag-reg { background: #DBEAFE; color: #1D4ED8; }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  /* Wake lock indicator */
+
+
+  .ann-hist-item {
+    background: rgba(255,255,255,.07); border-radius: 8px;
+    padding: 6px 14px; text-align: center; font-family: var(--mono);
+  }
+  .ann-hist-num { font-size: 18px; font-weight: 500; color: rgba(255,255,255,.7); }
+  .ann-hist-ctr { font-size: 10px; color: rgba(255,255,255,.35); margin-top: 2px; }
+
+  .wake-indicator { position: fixed; bottom: 8px; right: 8px; background: rgba(22,163,74,.15); color: var(--success); font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: 600; z-index: 100; }
+  /* ── PATIENT ALERT OVERLAY ── */
+  #patient-alert {
+    display: none; position: fixed; inset: 0; z-index: 99999;
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px; text-align: center;
+  }
+  #patient-alert.next { background: linear-gradient(160deg, #FFFBEB, #FEF3C7); }
+  #patient-alert.now  { background: linear-gradient(160deg, #F0FDF4, #DCFCE7); }
+  .pa-icon { font-size: 64px; margin-bottom: 12px; }
+  .pa-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .pa-next .pa-title { color: #92400E; }
+  .pa-now  .pa-title { color: #14532D; }
+  .pa-msg { font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+  .pa-next .pa-msg { color: #78350F; }
+  .pa-now  .pa-msg  { color: #166534; }
+  .pa-ticket { font-family: var(--mono); font-size: 72px; font-weight: 700; line-height: 1; letter-spacing: 4px; margin-bottom: 6px; }
+  .pa-next .pa-ticket { color: #D97706; }
+  .pa-now  .pa-ticket { color: #16A34A; }
+  .pa-counter { font-size: 16px; font-weight: 600; margin-bottom: 24px; }
+  .pa-next .pa-counter { color: #92400E; }
+  .pa-now  .pa-counter { color: #14532D; }
+  .pa-dismiss { background: white; border: 2px solid #E2E8F0; border-radius: 12px; padding: 14px 32px; font-family: var(--font); font-size: 15px; font-weight: 700; color: #475569; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+
+  /* ── KIOSK SCREEN — LIGHT THEME ── */
+  #screen-issuer { background: #EFF6FF; }
+  .kiosk-idle {
+    width:100%; height:100%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    background: linear-gradient(160deg,#EFF6FF 0%,#F8FAFF 60%,#EFF6FF 100%);
+    cursor:pointer; position:relative; overflow:hidden;
+  }
+  .ki-logo { margin-bottom:20px; opacity:.6; }
+  .ki-hospital { color:#64748B; font-size:14px; letter-spacing:2px; text-transform:uppercase; }
+  .ki-title { color:#1E3A5F; font-size:36px; font-weight:700; margin-top:8px; }
+  .ki-tap { color:#64748B; font-size:16px; margin-top:20px; }
+  .ki-pulse {
+    position:absolute; width:300px; height:300px; border-radius:50%;
+    border:2px solid #BFDBFE; animation:kiPulse 3s ease infinite;
+  }
+  @keyframes kiPulse { 0%{transform:scale(.8);opacity:.6} 100%{transform:scale(1.8);opacity:0} }
+
+  .kiosk-screen {
+    width:100%; height:100%; display:flex; flex-direction:column;
+    background: #F8FAFF;
+  }
+  .kiosk-header { text-align:center; padding:28px 20px 16px; flex-shrink:0; border-bottom:1px solid #E2EDF7; margin-bottom:4px; }
+  .kiosk-header-hospital { color:#64748B; font-size:12px; letter-spacing:2px; text-transform:uppercase; }
+  .kiosk-header-title { color:#1E3A5F; font-size:28px; font-weight:700; margin-top:6px; }
+  .kiosk-header-sub { color:#64748B; font-size:15px; margin-top:8px; }
+
+  .kiosk-service-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    padding:12px 18px 18px; flex:1; align-content:start;
+  }
+  .kiosk-svc-btn {
+    background:white; border:1.5px solid #D6E4F7;
+    border-radius:16px; padding:20px 16px; display:flex; flex-direction:column;
+    align-items:flex-start; gap:8px; cursor:pointer; transition:all .15s;
+    box-shadow:0 2px 8px rgba(27,79,138,.06);
+  }
+  .kiosk-svc-btn:hover { border-color:#3B82F6; background:#F0F7FF; box-shadow:0 4px 16px rgba(59,130,246,.15); transform:translateY(-2px); }
+  .kiosk-svc-btn:active { transform:translateY(0); background:#DBEAFE; }
+  .ksb-icon { font-size:28px; }
+  .ksb-name { color:#1E3A5F; font-size:16px; font-weight:700; line-height:1.3; }
+  .ksb-desc { color:#94A3B8; font-size:12px; }
+
+  .kiosk-priority-body { flex:1; display:flex; flex-direction:column; padding:16px 32px 32px; }
+  .kiosk-selected-svc {
+    background:#EFF6FF; border:1.5px solid #BFDBFE;
+    border-radius:12px; padding:12px 18px; margin-bottom:20px;
+    color:#1E3A5F; font-size:16px; font-weight:600;
+    display:flex; align-items:center; gap:10px;
+  }
+  .kiosk-priority-q { color:#1E3A5F; font-size:22px; font-weight:700; line-height:1.4; margin-bottom:8px; }
+  .kiosk-priority-sub { color:#64748B; font-size:14px; margin-bottom:28px; line-height:1.5; }
+  .kiosk-btn-yes {
+    background:linear-gradient(135deg,#E8453C,#C0392B); border:none;
+    border-radius:16px; padding:22px; text-align:center; cursor:pointer;
+    margin-bottom:12px; width:100%; box-shadow:0 4px 16px rgba(232,69,60,.25);
+  }
+  .kiosk-btn-no {
+    background:white; border:1.5px solid #D6E4F7;
+    border-radius:16px; padding:22px; text-align:center; cursor:pointer;
+    margin-bottom:20px; width:100%; box-shadow:0 2px 8px rgba(27,79,138,.06);
+  }
+  .kbtn-main { color:white; font-size:18px; font-weight:700; font-family:var(--font); }
+  .kiosk-btn-no .kbtn-main { color:#1E3A5F; }
+  .kbtn-sub { color:rgba(255,255,255,.7); font-size:13px; margin-top:4px; }
+  .kiosk-btn-no .kbtn-sub { color:#94A3B8; }
+  .kiosk-back { color:#94A3B8; font-size:14px; text-align:center; cursor:pointer; padding:10px; }
+  .kiosk-back:hover { color:#475569; }
+
+  .kiosk-ticket-body {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; padding:20px;
+  }
+  .kiosk-ticket-issued-lbl { color:#94A3B8; font-size:12px; letter-spacing:3px; text-transform:uppercase; margin-bottom:12px; }
+  .kiosk-ticket-number { font-family:var(--mono); font-size:clamp(80px,18vw,140px); font-weight:700; color:#1B4F8A; line-height:1; letter-spacing:6px; }
+  .kiosk-ticket-svc { color:#475569; font-size:18px; margin-top:12px; }
+  .kiosk-ticket-pr-badge { display:inline-block; background:#FEE2E2; border:1px solid #FCA5A5; color:#DC2626; font-size:14px; padding:5px 16px; border-radius:20px; margin-top:10px; font-weight:700; }
+  .kiosk-ticket-inst { color:#94A3B8; font-size:14px; margin-top:28px; line-height:1.9; }
+  .kiosk-ticket-timer { margin-top:20px; background:#EFF6FF; border-radius:20px; padding:8px 24px; color:#64748B; font-size:13px; border:1px solid #BFDBFE; }
+
+  .report-type-btn { padding:6px 12px; border-radius:20px; border:1.5px solid var(--border2); background:var(--white); font-family:var(--font); font-size:12px; font-weight:600; color:var(--text2); cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .report-type-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .report-type-btn.active { background:var(--primary); border-color:var(--primary); color:var(--white); }
+  /* ── ANNOUNCER SCREEN v2 — LIGHT THEME ── */
+  .ann2-wrap { display:flex; flex-direction:column; height:100vh; background:#F0F5FB; position:relative; overflow:hidden; }
+  .ann2-header { display:flex; align-items:center; justify-content:space-between; padding:9px 18px; background:#1B4F8A; flex-shrink:0; }
+  .ann2-logo { color:rgba(255,255,255,.85); font-size:12px; font-weight:500; }
+  .ann2-clock { color:rgba(255,255,255,.6); font-size:12px; font-family:var(--mono); }
+  .announcer-logout { color:rgba(255,255,255,.7); font-size:11px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); padding:4px 12px; border-radius:5px; cursor:pointer; font-family:var(--font); }
+  .ann2-body { flex:1; display:flex; min-height:0; overflow:hidden; }
+  /* Left column */
+  .ann2-left-col { flex:0 0 50%; display:flex; flex-direction:column; border-right:1px solid #D6E4F7; overflow:hidden; }
+  /* Now Serving — 2/3 */
+  .ann2-now { flex:2; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px 24px; text-align:center; background:white; border-bottom:2px solid #E2EDF7; overflow:hidden; }
+  .ann2-now-label { color:#94A3B8; font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px; }
+  .ann2-ticket { font-family:var(--mono); font-size:clamp(72px,10vw,110px); font-weight:700; color:#1B4F8A; line-height:1; letter-spacing:4px; }
+  .ann2-ticket.flash { animation:ticketFlash .5s ease; }
+  @keyframes ticketFlash { 0%{transform:scale(1)} 30%{transform:scale(1.06)} 100%{transform:scale(1)} }
+  .ann2-counter { color:#1B4F8A; font-size:clamp(16px,2.5vw,26px); font-weight:700; margin-top:10px; }
+  .ann2-service { color:#64748B; font-size:clamp(13px,1.8vw,17px); margin-top:5px; font-weight:500; }
+  .ann2-recent { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
+  .ann2-r-chip { background:#EFF6FF; border:1px solid #BFDBFE; border-radius:6px; padding:4px 11px; font-family:var(--mono); font-size:13px; color:#3B82F6; font-weight:600; }
+  /* Blood Extraction — 1/3 */
+  .ann2-extraction { flex:1; padding:12px 18px; background:#FDF4FF; border-top:2px solid #E9D5FF; display:flex; flex-direction:column; overflow:hidden; }
+  .ann2-sec-title { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; flex-shrink:0; color:#7C3AED; }
+  .ann2-ext-inner { flex:1; display:flex; gap:14px; align-items:center; min-height:0; }
+  .ann2-ext-now { flex-shrink:0; padding-right:14px; border-right:1px solid #E9D5FF; }
+  .ann2-ext-lbl { color:#9CA3AF; font-size:9px; text-transform:uppercase; letter-spacing:1px; }
+  .ann2-ext-ticket { font-family:var(--mono); font-size:44px; font-weight:700; color:#7C3AED; line-height:1; margin-top:3px; }
+  .ann2-ext-svc { color:#9CA3AF; font-size:10px; margin-top:2px; }
+  .ann2-ext-divider { width:1px; background:#E9D5FF; align-self:stretch; flex-shrink:0; }
+  .ann2-ext-waitlist { flex:1; }
+  .ann2-ext-wait-lbl { color:#9CA3AF; font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:7px; }
+  .ann2-ext-cols { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .ann2-ext-col-label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:3px 10px; border-radius:5px; margin-bottom:6px; display:inline-block; }
+  .ann2-ext-col-label.pr { background:#FEE2E2; color:#DC2626; }
+  .ann2-ext-col-label.reg { background:#F1F5F9; color:#64748B; }
+  .ann2-ext-item { display:flex; align-items:center; justify-content:space-between; padding:7px 11px; border-radius:7px; margin-bottom:5px; }
+  .ann2-ext-item.pr { background:#FEF2F2; border:1px solid #FECACA; }
+  .ann2-ext-item.reg { background:#F8FAFC; border:1px solid #E2E8F0; }
+  .ann2-ext-num { font-family:var(--mono); font-size:18px; font-weight:700; }
+  .ann2-ext-item.pr .ann2-ext-num { color:#DC2626; }
+  .ann2-ext-item.reg .ann2-ext-num { color:#475569; }
+  .ann2-ext-pos { font-size:9px; color:#94A3B8; }
+  .ann2-ext-empty { color:#C4B5FD; font-size:10px; font-style:italic; padding:4px 0; }
+  /* Right column — Counter Status */
+  .ann2-counters { flex:0 0 50%; padding:14px 16px; background:white; display:flex; flex-direction:column; overflow:hidden; border-left:1px solid #D6E4F7; }
+  .ann2-counters .ann2-sec-title { color:#475569; font-size:11px; }
+  .ann2-ctr-grid { display:flex; flex-direction:column; gap:7px; flex:1; overflow:hidden; }
+  .ann2-ctr-item { flex:1; min-height:0; background:#F8FAFC; border:1.5px solid #E2E8F0; border-radius:10px; padding:0 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .ann2-ctr-item.on { border-color:#86EFAC; background:#F0FDF4; }
+  .ann2-ctr-item.break { border-color:#FCD34D; background:#FFFBEB; }
+  .ann2-ctr-item.offline { opacity:.5; }
+  .ann2-ctr-left { display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+  .ann2-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+  .ann2-dot.g { background:#16A34A; box-shadow:0 0 7px rgba(22,163,74,.5); }
+  .ann2-dot.y { background:#D97706; box-shadow:0 0 7px rgba(217,119,6,.4); }
+  .ann2-dot.x { background:#CBD5E1; }
+  .ann2-ctr-info { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .ann2-ctr-label { color:#1E3A5F; font-size:20px; font-weight:700; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ann2-ctr-role { color:#64748B; font-size:14px; font-weight:500; }
+  .ann2-ctr-right { flex-shrink:0; text-align:right; }
+  .ann2-ctr-ticket { font-family:var(--mono); font-size:36px; font-weight:700; color:#1B4F8A; line-height:1; }
+  .ann2-ctr-service { color:#64748B; font-size:14px; font-weight:500; white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+  .ann2-ctr-idle { color:#94A3B8; font-size:15px; font-style:italic; }
+  /* Activation overlay */
+  .ann-activate-overlay { position:absolute; inset:0; z-index:999; background:rgba(240,245,251,.97); display:flex; align-items:center; justify-content:center; }
+  .ann-activate-box { text-align:center; padding:48px 40px; max-width:420px; }
+  .ann-activate-icon { font-size:64px; margin-bottom:20px; }
+  .ann-activate-title { font-size:26px; font-weight:700; color:#1E3A5F; font-family:var(--font); margin-bottom:12px; }
+  .ann-activate-sub { font-size:14px; color:#64748B; font-family:var(--font); line-height:1.6; margin-bottom:32px; }
+  .ann-activate-btn { background:#1B4F8A; color:white; border:none; border-radius:50px; padding:18px 48px; font-size:18px; font-weight:700; font-family:var(--font); cursor:pointer; box-shadow:0 8px 24px rgba(27,79,138,.3); transition:all .2s; }
+  .ann-activate-btn:hover { background:#2563B0; transform:translateY(-2px); }
+
+    .report-type-btn { padding:6px 12px; border-radius:20px; border:1.5px solid var(--border2); background:var(--white); font-family:var(--font); font-size:12px; font-weight:600; color:var(--text2); cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .report-type-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .report-type-btn.active { background:var(--primary); border-color:var(--primary); color:var(--white); 
+  .report-type-btn { padding:6px 12px; border-radius:20px; border:1.5px solid var(--border2); background:var(--white); font-family:var(--font); font-size:12px; font-weight:600; color:var(--text2); cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .report-type-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .report-type-btn.active { background:var(--primary); border-color:var(--primary); color:var(--white); }
+
+
+</style>
+</head>
+<body>
+
+<!-- Offline Banner -->
+<div id="offline-banner">⚠ OFFLINE — Changes will sync when connection is restored</div>
+
+<!-- Wake Lock Indicator -->
+<div class="wake-indicator" id="wake-indicator" style="display:none">🔒 Screen Lock Active</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-badge">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+      </div>
+      <div class="login-title">CReg BQMS</div>
+      <div class="login-sub">Backup Queue Management System</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input class="form-input" id="login-username" type="text" placeholder="Enter username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="login-password" type="password" placeholder="Enter password" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Log In</button>
+    <div class="error-msg" id="login-error"></div>
+    <div style="text-align:center; margin-top:16px; font-size:12px; color:var(--text3);">
+      Makati Medical Center · Central Registration
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     COUNTER SELECT SCREEN
+═══════════════════════════════════════════════════════════ -->
+<div id="screen-counter-select" class="screen">
+  <div class="counter-card">
+    <h2>Select Your Counter</h2>
+    <p id="counter-select-sub">Welcome. Please select your assigned counter for today.</p>
+    <div class="counter-grid" id="counter-grid"></div>
+    <button class="btn btn-primary" id="counter-confirm-btn" onclick="confirmCounter()" disabled>Confirm & Enter</button>
+    <div class="error-msg" id="counter-error"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     QUEUE ISSUER SCREEN
+═══════════════════════════════════════════════════════════ -->
+<div id="screen-issuer" class="screen" style="position:relative">
+  <!-- TL Staff button: always visible small button, top-right corner -->
+  <div id="kiosk-tl-btn" style="position:absolute;top:12px;right:12px;z-index:9999;">
+    <button onclick="document.getElementById('kiosk-tl-confirm').style.display='flex'"
+      style="background:rgba(27,79,138,.08);border:1px solid #D6E4F7;color:#94A3B8;padding:6px 12px;border-radius:8px;font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.5px;">
+      STAFF
+    </button>
+  </div>
+  <!-- TL Confirm dialog -->
+  <div id="kiosk-tl-confirm" style="display:none;position:absolute;inset:0;z-index:10000;background:rgba(240,245,251,.95);align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:16px;padding:32px 40px;box-shadow:0 8px 40px rgba(0,0,0,.12);border:1px solid #E2E8F0;text-align:center;min-width:280px;">
+      <div style="font-size:22px;margin-bottom:8px;">🔐</div>
+      <div style="font-size:16px;font-weight:700;color:#1E3A5F;margin-bottom:4px;font-family:var(--font);">Staff Access</div>
+      <div style="font-size:13px;color:#64748B;margin-bottom:24px;font-family:var(--font);">Are you sure you want to logout?</div>
+      <button onclick="doLogout()" style="background:#1B4F8A;color:white;border:none;padding:14px 32px;border-radius:10px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-bottom:10px;box-shadow:0 4px 12px rgba(27,79,138,.25);">
+        Yes, Logout
+      </button>
+      <button onclick="document.getElementById('kiosk-tl-confirm').style.display='none'" style="background:none;border:1.5px solid #E2E8F0;color:#64748B;padding:12px 32px;border-radius:10px;font-family:var(--font);font-size:14px;cursor:pointer;width:100%;">
+        Cancel
+      </button>
+    </div>
+  </div>
+  <!-- KIOSK: Idle Screen -->
+  <div class="kiosk-idle" id="kiosk-idle" onclick="kioskWakeUp()" style="cursor:pointer">
+    <div class="ki-logo" id="ki-logo-longpress">
+      <svg viewBox="0 0 24 24" fill="#1B4F8A" width="48" height="48"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+    </div>
+    <div class="ki-hospital">Makati Medical Center</div>
+    <div class="ki-title">Central Registration</div>
+    <div class="ki-tap">Tap anywhere to get your queue number</div>
+    <!-- Ticket recall banner — shown if patient already has a ticket today -->
+    <div id="ki-recall-banner" style="display:none;margin-top:20px;background:white;border-radius:14px;padding:14px 24px;box-shadow:0 4px 16px rgba(27,79,138,.12);border:2px solid #BFDBFE;text-align:center;">
+      <div style="font-size:11px;color:#64748B;font-family:sans-serif;margin-bottom:4px;">YOUR QUEUE NUMBER</div>
+      <div id="ki-recall-num" style="font-family:monospace;font-size:40px;font-weight:700;color:#1B4F8A;line-height:1;"></div>
+      <div id="ki-recall-svc" style="font-size:13px;color:#64748B;margin-top:4px;font-family:sans-serif;"></div>
+      <div id="ki-recall-time" style="font-size:11px;color:#94A3B8;margin-top:2px;font-family:sans-serif;"></div>
+    </div>
+    <div class="ki-pulse"></div>
+  </div>
+
+
+  <!-- KIOSK: Service Selection -->
+  <div class="kiosk-screen" id="kiosk-service" style="display:none">
+    <div class="kiosk-header">
+      <div class="kiosk-header-hospital">Makati Medical Center</div>
+      <div class="kiosk-header-title">Central Registration</div>
+      <div class="kiosk-header-sub">Tap your reason for visiting today</div>
+    </div>
+    <div class="kiosk-service-grid" id="kiosk-service-grid">
+      <div class="kiosk-svc-btn" onclick="kioskSelectService('walkin')">
+        <div class="ksb-icon">&#x1F6B6;</div>
+        <div class="ksb-name">Walk-In</div>
+        <div class="ksb-desc">First visit, no appointment</div>
+      </div>
+      <div class="kiosk-svc-btn" onclick="kioskSelectService('appointment')">
+        <div class="ksb-icon">&#x1F4C5;</div>
+        <div class="ksb-name">With Appointment</div>
+        <div class="ksb-desc">I have a schedule</div>
+      </div>
+      <div class="kiosk-svc-btn" onclick="kioskSelectService('payment')">
+        <div class="ksb-icon">&#x1F4B3;</div>
+        <div class="ksb-name">Payment</div>
+        <div class="ksb-desc">Pay my bill</div>
+      </div>
+      <div class="kiosk-svc-btn" onclick="kioskSelectService('inquiry')">
+        <div class="ksb-icon">&#x2753;</div>
+        <div class="ksb-name">Inquiry</div>
+        <div class="ksb-desc">Ask a question / scheduling</div>
+      </div>
+      <div class="kiosk-svc-btn" onclick="kioskSelectService('extraction')" style="border-color:#DDD6FE;background:#FAFAFF;">
+        <div class="ksb-icon">&#x1F489;</div>
+        <div class="ksb-name" style="color:#6D28D9;">Blood Extraction</div>
+        <div class="ksb-desc">For lab blood draw</div>
+      </div>
+      <div class="kiosk-svc-btn" onclick="kioskSelectService('labresults')">
+        <div class="ksb-icon">&#x1F9EA;</div>
+        <div class="ksb-name">Lab Results</div>
+        <div class="ksb-desc">Pick up results</div>
+      </div>
+      <div class="kiosk-svc-btn" onclick="kioskSelectService('radiology')">
+        <div class="ksb-icon">&#x1FA7B;</div>
+        <div class="ksb-name">Radiology Results</div>
+        <div class="ksb-desc">Pick up xray results</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KIOSK: Priority Check -->
+  <div class="kiosk-screen" id="kiosk-priority" style="display:none">
+    <div class="kiosk-header">
+      <div class="kiosk-header-hospital">Makati Medical Center</div>
+      <div class="kiosk-header-title">Central Registration</div>
+    </div>
+    <div class="kiosk-priority-body">
+      <div class="kiosk-selected-svc" id="kiosk-selected-label"></div>
+      <div class="kiosk-priority-q">Are you a Senior Citizen, PWD, or Pregnant?</div>
+      <div class="kiosk-priority-sub">Priority patients are served ahead of the regular queue</div>
+      <button class="kiosk-btn-yes" onclick="kioskIssueTicket(true)">
+        <div class="kbtn-main">Yes &mdash; I qualify for Priority</div>
+        <div class="kbtn-sub">Senior Citizen &bull; PWD &bull; Pregnant</div>
+      </button>
+      <button class="kiosk-btn-no" onclick="kioskIssueTicket(false)">
+        <div class="kbtn-main">No &mdash; Regular queue</div>
+        <div class="kbtn-sub">Standard service</div>
+      </button>
+      <div class="kiosk-back" onclick="kioskShowService()">&#8592; Back to services</div>
+    </div>
+  </div>
+
+  <!-- KIOSK: Already Has Ticket Warning (Option B) -->
+  <div class="kiosk-screen" id="kiosk-warn" style="display:none">
+    <div class="kiosk-header">
+      <div class="kiosk-header-hospital">Makati Medical Center</div>
+      <div class="kiosk-header-title">Central Registration</div>
+    </div>
+    <div class="kiosk-priority-body">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-size:52px;margin-bottom:8px;">⚠️</div>
+        <div style="font-size:18px;font-weight:700;color:#92400E;margin-bottom:6px;font-family:var(--font);">You already have a number</div>
+      </div>
+      <div style="background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:12px;padding:16px;text-align:center;margin-bottom:20px;">
+        <div style="font-size:11px;color:#92400E;letter-spacing:1px;text-transform:uppercase;font-family:var(--font);">Your Queue Number</div>
+        <div id="kiosk-warn-num" style="font-family:var(--mono);font-size:52px;font-weight:700;color:#1B4F8A;line-height:1;margin-top:4px;"></div>
+        <div id="kiosk-warn-svc" style="font-size:13px;color:#64748B;margin-top:4px;font-family:var(--font);"></div>
+        <div id="kiosk-warn-time" style="font-size:11px;color:#94A3B8;margin-top:2px;font-family:var(--font);"></div>
+      </div>
+      <div style="font-size:14px;color:#78350F;text-align:center;margin-bottom:20px;line-height:1.6;font-family:var(--font);">Do you want to keep your existing number or get a different one?</div>
+      <button onclick="kioskWarnKeep()" style="background:#1B4F8A;color:white;border:none;border-radius:14px;padding:18px;text-align:center;width:100%;margin-bottom:10px;cursor:pointer;">
+        <div style="font-size:16px;font-weight:700;font-family:var(--font);">Keep my number</div>
+      </button>
+      <button onclick="kioskWarnNew()" style="background:white;border:1.5px solid #D6E4F7;border-radius:14px;padding:18px;text-align:center;width:100%;cursor:pointer;">
+        <div style="font-size:16px;font-weight:700;color:#1E3A5F;font-family:var(--font);">Get a different number</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- KIOSK: Ticket Issued -->
+  <div class="kiosk-screen" id="kiosk-ticket" style="display:none">
+    <div class="kiosk-header">
+      <div class="kiosk-header-hospital">Makati Medical Center</div>
+      <div class="kiosk-header-title">Your Queue Number</div>
+    </div>
+    <div class="kiosk-ticket-body">
+      <div class="kiosk-ticket-issued-lbl">Ticket Issued</div>
+      <div class="kiosk-ticket-number" id="kiosk-ticket-num">—</div>
+      <div class="kiosk-ticket-svc" id="kiosk-ticket-svc"></div>
+      <div class="kiosk-ticket-pr-badge" id="kiosk-ticket-badge" style="display:none">&#9733; Priority Lane</div>
+      <!-- Photo reminder: shown on tablet kiosk only, hidden on QR phone -->
+      <div id="kiosk-photo-reminder" style="display:none;margin-top:22px;width:100%;background:#1B4F8A;border-radius:16px;padding:18px 16px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:6px;">📸</div>
+        <div style="color:white;font-size:20px;font-weight:800;line-height:1.2;">Take a photo of your number!</div>
+        <div style="color:rgba(255,255,255,.8);font-size:13px;font-weight:500;margin-top:5px;">or write it on the paper provided</div>
+      </div>
+      <div class="kiosk-ticket-inst">
+        Wait to be called at the counter.<br>
+        You may sit in the waiting area.
+      </div>
+      <div class="kiosk-ticket-timer" id="kiosk-timer">Returning to home in 5s...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Ticket Issued Overlay -->
+<div class="ticket-overlay" id="ticket-overlay">
+  <div style="text-align:center">
+    <div style="font-size:13px; color:rgba(255,255,255,.5); letter-spacing:2px; text-transform:uppercase; margin-bottom:16px;">TICKET ISSUED</div>
+    <div class="ticket-number-display" id="ticket-issued-number">B001</div>
+    <div class="ticket-service-label" id="ticket-issued-service">Walk-In (Reg)</div>
+    <div class="ticket-instruction">Write this number on the patient slip</div>
+  </div>
+  <button class="ticket-next-btn" onclick="closeTicketOverlay()">Issue Next ›</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PSS COUNTER SCREEN
+═══════════════════════════════════════════════════════════ -->
+<div id="screen-pss" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg></div>
+      <div>
+        <div class="topbar-title" id="pss-counter-label">Counter —</div>
+        <div class="topbar-sub" id="pss-agent-label">—</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="status-badge badge-active" id="pss-status-badge">ACTIVE</span>
+      <button class="icon-btn" onclick="toggleBreak()" id="pss-break-btn" title="Toggle Break">
+        <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="icon-btn" onclick="doLogout()" title="Logout">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <!-- Queue Status Bar -->
+  <div class="qsb-wrap">
+    <div class="qsb-scroller">
+      <div class="qsb-inner" id="pss-qsb-inner">
+        <span class="qsb-label">Live Queues</span>
+      </div>
+    </div>
+  </div>
+  <div class="pss-layout">
+    <div class="queue-panel scrollbar-thin">
+      <div class="queue-panel-header">
+        <h3>Waiting Queue</h3>
+        <span class="queue-count-badge" id="pss-queue-count">0</span>
+      </div>
+      <div class="queue-list" id="pss-queue-list"></div>
+    </div>
+    <div class="action-panel">
+      <div class="active-ticket-display" id="pss-active-display">
+        <div class="no-active">No active ticket.<br>Select one from the queue.</div>
+      </div>
+      <div class="action-buttons" id="pss-action-buttons" style="display:none">
+        <button class="action-btn ab-close" onclick="endTransaction('close')">✓ Close</button>
+        <button class="action-btn ab-cancel" onclick="endTransaction('cancel')">✗ Cancel</button>
+        <button class="action-btn ab-transfer" onclick="openTransfer('close')">↗ Close & Transfer</button>
+        <button class="action-btn ab-cancel-transfer" onclick="openTransfer('cancel')">↪ Cancel & Transfer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MEDTECH SCREEN (same as PSS but extraction only)
+═══════════════════════════════════════════════════════════ -->
+<div id="screen-medtech" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo" style="background:#7C3AED"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg></div>
+      <div>
+        <div class="topbar-title">Extraction — MedTech</div>
+        <div class="topbar-sub" id="mt-agent-label">cregmt</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="status-badge badge-active">ACTIVE</span>
+      <button class="icon-btn" onclick="doLogout()" title="Logout">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="pss-layout">
+    <div class="queue-panel scrollbar-thin">
+      <div class="queue-panel-header">
+        <h3>Extraction Queue</h3>
+        <span class="queue-count-badge" id="mt-queue-count">0</span>
+      </div>
+      <div class="queue-list" id="mt-queue-list"></div>
+    </div>
+    <div class="action-panel">
+      <div class="active-ticket-display" id="mt-active-display">
+        <div class="no-active">No active ticket.<br>Select one from the extraction queue.</div>
+      </div>
+      <div class="action-buttons" id="mt-action-buttons" style="display:none">
+        <button class="action-btn ab-close" onclick="endTransactionMT('close')" style="grid-column:span 2">✓ Close — Extraction Complete</button>
+        <button class="action-btn ab-cancel" onclick="endTransactionMT('cancel')" style="grid-column:span 2">✗ Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TEAM LEADER DASHBOARD
+═══════════════════════════════════════════════════════════ -->
+<div id="screen-tl" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg></div>
+      <div>
+        <div class="topbar-title">Team Leader</div>
+        <div class="topbar-sub" id="tl-agent-label">ncaringal</div>
+      </div>
+    </div>
+    <div class="topbar-right" style="gap:8px;">
+      <button class="btn btn-sm btn-outline" onclick="tlActAsPSS()" title="Act as PSS" style="font-size:12px;padding:6px 12px;display:flex;align-items:center;gap:5px;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Act as PSS
+      </button>
+      <button class="icon-btn" onclick="doLogout()" title="Logout">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="tl-tabs">
+    <button class="tl-tab active" onclick="switchTLTab('overview')">Overview</button>
+    <button class="tl-tab" onclick="switchTLTab('counters')">Counters</button>
+    <button class="tl-tab" onclick="switchTLTab('reports')">Reports</button>
+    <button class="tl-tab" onclick="switchTLTab('admin')">Admin</button>
+  </div>
+  <div class="tl-body scrollbar-thin">
+
+    <!-- Overview Panel -->
+    <div class="tl-panel active" id="panel-overview">
+      <div class="stats-grid" id="tl-stats-grid"></div>
+      <div style="font-size:12px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px;">Service Summary</div>
+      <div class="report-table-wrap">
+        <table class="data-table" id="tl-service-table">
+          <thead><tr>
+            <th>Service</th><th>Total</th><th>Served</th><th>In Queue</th><th>In Progress</th><th>Cancelled</th><th>Avg Svc</th>
+          </tr></thead>
+          <tbody id="tl-service-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Counters Panel -->
+    <div class="tl-panel" id="panel-counters">
+      <div class="counter-cards" id="tl-counter-cards"></div>
+    </div>
+
+    <!-- Reports Panel -->
+    <div class="tl-panel" id="panel-reports">
+      <div class="card">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="btn btn-ghost btn-sm" onclick="setQuickRange('today')" style="width:auto;padding:6px 12px;font-size:12px">Today</button>
+          <button class="btn btn-ghost btn-sm" onclick="setQuickRange('week')" style="width:auto;padding:6px 12px;font-size:12px">This Week</button>
+          <button class="btn btn-ghost btn-sm" onclick="setQuickRange('month')" style="width:auto;padding:6px 12px;font-size:12px">This Month</button>
+          <button class="btn btn-ghost btn-sm" onclick="setQuickRange('year')" style="width:auto;padding:6px 12px;font-size:12px">This Year</button>
+        </div>
+        <div class="report-filters">
+          <div class="form-group"><label class="form-label">From Date</label><input class="form-input" type="date" id="report-from"></div>
+          <div class="form-group"><label class="form-label">To Date</label><input class="form-input" type="date" id="report-to"></div>
+          <button class="btn btn-primary btn-sm" onclick="generateReport()" style="flex:none;align-self:flex-end;width:auto;padding:12px 20px;">Generate</button>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="report-type-btn active" data-type="all" onclick="selectReportType(this)">All Transactions</button>
+          <button class="report-type-btn" data-type="agent" onclick="selectReportType(this)">Agent Performance</button>
+          <button class="report-type-btn" data-type="counter" onclick="selectReportType(this)">Counter Performance</button>
+          <button class="report-type-btn" data-type="hourly" onclick="selectReportType(this)">Hourly Volume</button>
+          <button class="report-type-btn" data-type="service" onclick="selectReportType(this)">Service Analysis</button>
+          <button class="report-type-btn" data-type="waittime" onclick="selectReportType(this)">Wait Time</button>
+          <button class="report-type-btn" data-type="daily" onclick="selectReportType(this)">Daily Summary</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="exportReport()" style="width:auto;padding:10px 18px;" id="export-btn" disabled>Export .xlsx</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportPDF()" style="width:auto;padding:10px 18px;" id="pdf-btn" disabled>Print / PDF</button>
+        </div>
+      </div>
+      <div id="report-output" class="mt-16"></div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="tl-panel" id="panel-admin">
+      <div class="admin-section">
+        <h3>⚠️ Queue Reset</h3>
+        <p style="font-size:13px; color:var(--text2); margin-bottom:14px;">Resets all ticket counters and clears the active queue. Use only at end of day or as directed.</p>
+        <button class="btn btn-danger" style="width:auto; padding:12px 24px;" onclick="confirmReset()">Reset Today's Queue</button>
+      </div>
+      <div class="admin-section">
+        <h3>Add New Staff Account</h3>
+        <div class="form-group" style="margin-bottom:14px; padding:12px; background:var(--surface2); border-radius:var(--radius-sm); border:1px solid var(--border2)">
+          <label class="form-label" style="color:var(--warning)">⚠ Your TL Password (required to add staff without logging out)</label>
+          <input class="form-input" id="tl-pw-cache" type="password" placeholder="Enter your own password to confirm">
+        </div>
+        <div class="add-staff-form">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Full Name</label><input class="form-input" id="new-staff-name" placeholder="e.g. Juan Dela Cruz"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Username</label><input class="form-input" id="new-staff-username" placeholder="e.g. jdelacruz"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Password</label><input class="form-input" id="new-staff-password" type="password" placeholder="Min 6 characters"></div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Role</label>
+            <select class="form-input" id="new-staff-role">
+              <option value="pss">PSS – Registration</option>
+              <option value="cashier">PSS – Cashier</option>
+              <option value="medtech">MedTech</option>
+              <option value="issuer">Queue Issuer</option>
+              <option value="announcer">Announcer Display</option>
+              <option value="tl">Team Leader</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary mt-16" style="width:auto; padding:12px 24px;" onclick="addStaffAccount()">Create Account</button>
+        <div class="error-msg" id="add-staff-error"></div>
+      </div>
+      <div class="admin-section">
+        <h3>Staff Accounts</h3>
+        <div class="staff-list" id="staff-list-admin"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ANNOUNCER SCREEN v2
+═══════════════════════════════════════════════════════════ -->
+<div id="screen-announcer" class="screen">
+  <div class="ann2-wrap">
+    <!-- Activation overlay -->
+    <div class="ann-activate-overlay" id="ann-activate-overlay" style="display:flex;position:absolute;inset:0;z-index:999;background:rgba(240,245,251,.97);align-items:center;justify-content:center;">
+      <div class="ann-activate-box">
+        <div class="ann-activate-icon">&#x1F50A;</div>
+        <div class="ann-activate-title">CReg BQMS Announcer</div>
+        <div class="ann-activate-sub">Connect your speaker then tap Start.<br>Voice announcements will play automatically.</div>
+        <button class="ann-activate-btn" onclick="activateAnnouncer()">Tap to Start Announcer</button>
+      </div>
+    </div>
+    <!-- Header -->
+    <div class="ann2-header">
+      <div class="ann2-logo">Makati Medical Center &mdash; Central Registration</div>
+      <div id="ann2-clock" class="ann2-clock"></div>
+      <button class="announcer-logout" onclick="doLogout()">Logout</button>
+    </div>
+    <!-- Body: Left col (Now Serving + Extraction) | Right col (Counter Status) -->
+    <div class="ann2-body">
+      <!-- LEFT: Now Serving (2/3) + Blood Extraction (1/3) -->
+      <div class="ann2-left-col">
+        <div class="ann2-now">
+          <div class="ann2-now-label" id="ann-now-label">WAITING FOR NEXT TICKET</div>
+          <div class="ann2-ticket" id="ann-ticket">&mdash;</div>
+          <div class="ann2-counter" id="ann-counter"></div>
+          <div class="ann2-service" id="ann-service"></div>
+          <div class="ann2-recent" id="ann2-recent-bar"></div>
+        </div>
+        <div class="ann2-extraction">
+          <div class="ann2-sec-title">Blood Extraction</div>
+          <div class="ann2-ext-inner">
+            <div class="ann2-ext-now">
+              <div class="ann2-ext-lbl">Now Serving</div>
+              <div class="ann2-ext-ticket" id="ann2-ext-ticket">&mdash;</div>
+              <div class="ann2-ext-svc" id="ann2-ext-svc"></div>
+            </div>
+            <div class="ann2-ext-divider"></div>
+            <div class="ann2-ext-waitlist">
+              <div class="ann2-ext-wait-lbl">Waiting List</div>
+              <div class="ann2-ext-cols">
+                <div>
+                  <div class="ann2-ext-col-label pr">Priority</div>
+                  <div id="ann2-ext-pr-list"></div>
+                </div>
+                <div>
+                  <div class="ann2-ext-col-label reg">Regular</div>
+                  <div id="ann2-ext-reg-list"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- RIGHT: Counter Status (full height) -->
+      <div class="ann2-counters">
+        <div class="ann2-sec-title">Counter Status</div>
+        <div class="ann2-ctr-grid" id="ann2-ctr-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TRANSFER MODAL
+═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="transfer-modal">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3 id="transfer-modal-title">Transfer to Service</h3>
+      <button class="modal-close" onclick="closeTransfer()">×</button>
+    </div>
+    <div class="transfer-list" id="transfer-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CONFIRM MODAL
+═══════════════════════════════════════════════════════════ -->
+<div class="confirm-modal" id="confirm-modal">
+  <div class="confirm-box">
+    <h3 id="confirm-title">Confirm Action</h3>
+    <p id="confirm-msg">Are you sure?</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok-btn" onclick="confirmOk()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FIREBASE + APP LOGIC
+═══════════════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, browserSessionPersistence, setPersistence }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, set, get, update, push, onValue, runTransaction, remove, serverTimestamp, off }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ── CONFIG ──────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyAg_pqZ9nyx1AXCgv9_R2tfaO2LbuVDuME",
+  authDomain: "bqms-6b1ee.firebaseapp.com",
+  databaseURL: "https://bqms-6b1ee-default-rtdb.firebaseio.com",
+  projectId: "bqms-6b1ee",
+  storageBucket: "bqms-6b1ee.firebasestorage.app",
+  messagingSenderId: "887819850237",
+  appId: "1:887819850237:web:a1515db75de20c29968994"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getDatabase(fbApp);
+setPersistence(auth, browserSessionPersistence).catch(function(e){ console.warn("Persistence:", e); });
+
+// ── KIOSK AUTO-LOGIN ─────────────────────────────────────────
+const _isKioskMode = new URLSearchParams(window.location.search).get('kiosk') === 'true';
+const _KIOSK_EMAIL = 'issuer@bqms.creg.local';
+const _KIOSK_PASS  = '123456';
+
+// ── SERVICES MASTER LIST ────────────────────────────────────
+const SERVICES = [
+  { prefix:'A', name:'Walk-In',                    cat:'Walk-In',    type:'Pr',  label:'Walk-In (Pr)'                    },
+  { prefix:'B', name:'Walk-In',                    cat:'Walk-In',    type:'Reg', label:'Walk-In (Reg)'                   },
+  { prefix:'C', name:'With Appointment',           cat:'Appointment',type:'Pr',  label:'With Appointment (Pr)'           },
+  { prefix:'D', name:'With Appointment',           cat:'Appointment',type:'Reg', label:'With Appointment (Reg)'          },
+  { prefix:'E', name:'Payment',                    cat:'Payment',    type:'Pr',  label:'Payment (Pr)'                    },
+  { prefix:'F', name:'Payment',                    cat:'Payment',    type:'Reg', label:'Payment (Reg)'                   },
+  { prefix:'G', name:'Inquiry / For Scheduling',   cat:'Inquiry',    type:'Pr',  label:'Inquiry/ For Scheduling (Pr)'    },
+  { prefix:'H', name:'Inquiry / For Scheduling',   cat:'Inquiry',    type:'Reg', label:'Inquiry/ For Scheduling (Reg)'   },
+  { prefix:'I', name:'Extraction',                 cat:'Extraction', type:'Pr',  label:'Extraction (Pr)'                 },
+  { prefix:'J', name:'Extraction',                 cat:'Extraction', type:'Reg', label:'Extraction (Reg)'                },
+  { prefix:'K', name:'Results – Laboratory',       cat:'Results',    type:'Pr',  label:'Results Laboratory (Pr)'         },
+  { prefix:'L', name:'Results – Laboratory',       cat:'Results',    type:'Reg', label:'Results Laboratory (Reg)'        },
+  { prefix:'M', name:'Results – Radiology Xray',   cat:'Results',    type:'Pr',  label:'Results Radiology Xray (Pr)'     },
+  { prefix:'N', name:'Results – Radiology Xray',   cat:'Results',    type:'Reg', label:'Results Radiology Xray (Reg)'    },
+];
+
+const SERVICE_MAP = {};
+SERVICES.forEach(s => { SERVICE_MAP[s.prefix] = s; });
+
+const COUNTERS = [
+  { id:'counter1',   label:'Counter 1',   role:'cashier',  shared:true  },
+  { id:'counter2',   label:'Counter 2',   role:'pss',      shared:false },
+  { id:'counter3',   label:'Counter 3',   role:'pss',      shared:false },
+  { id:'counter4',   label:'Counter 4',   role:'pss',      shared:false },
+  { id:'counter5',   label:'Counter 5',   role:'pss',      shared:false },
+  { id:'counter6',   label:'Counter 6',   role:'pss',      shared:false },
+  { id:'extraction', label:'Extraction',  role:'medtech',  shared:true  },
+];
+
+// PSS/Cashier can see all non-extraction services; MedTech sees only extraction
+const PSS_SERVICES    = SERVICES.filter(s => s.cat !== 'Extraction');
+const MEDTECH_SERVICES = SERVICES.filter(s => s.cat === 'Extraction');
+const CASHIER_SERVICES = SERVICES.filter(s => s.cat === 'Payment');
+
+// ── STATE ────────────────────────────────────────────────────
+let currentUser = null;
+let currentRole = null;
+let currentCounter = null;
+let currentAgentName = '';
+let activeTicketId = null;
+let activeTicketData = null;
+let transferMode = null;
+let timerInterval = null;
+let queueListeners = [];
+let confirmCallback = null;
+let reportData = [];
+let queueCache = {};  // prefix -> count
+
+// ── INIT ─────────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    const snap = await get(ref(db, `users/${user.uid}`));
+    if (snap.exists()) {
+      const profile = snap.val();
+      currentUser = user;
+      currentRole = profile.role;
+      currentAgentName = profile.displayName || profile.username;
+
+      // Check for pending password reset
+      const resetSnap = await get(ref(db, `passwordResets/${user.uid}`));
+      if (resetSnap.exists() && resetSnap.val().status === 'pending') {
+        try {
+          const { updatePassword } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+          await updatePassword(user, resetSnap.val().newPassword);
+          await update(ref(db, `passwordResets/${user.uid}`), { status: 'applied', appliedAt: Date.now() });
+        } catch(e) { console.warn('Password reset apply failed:', e.message); }
+      }
+
+      // Check for midnight auto-reset
+      checkMidnightReset();
+
+      if (['pss','cashier'].includes(currentRole)) {
+        showScreen('counter-select');
+        buildCounterSelect();
+      } else if (currentRole === 'medtech') {
+        currentCounter = 'extraction';
+        showScreen('medtech');
+        initMedtech();
+      } else if (currentRole === 'issuer') {
+        showScreen('issuer');
+        initIssuer();
+      } else if (currentRole === 'tl') {
+        showScreen('tl');
+        initTL();
+      } else if (currentRole === 'announcer') {
+        showScreen('announcer');
+        initAnnouncer();
+      }
+    }
+  } else {
+    if (_isKioskMode) {
+      // Kiosk mode: show loading then auto-login
+      showScreen('login');
+      var ls = document.getElementById('screen-login');
+      if (ls) ls.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#F0F5FB;gap:16px;"><div style="font-size:48px;">🏥</div><div style="font-size:20px;font-weight:700;color:#1B4F8A;font-family:sans-serif;">Central Registration</div><div style="font-size:14px;color:#64748B;font-family:sans-serif;">Loading queue system...</div></div>';
+      signInWithEmailAndPassword(auth, _KIOSK_EMAIL, _KIOSK_PASS)
+        .catch(function(e) {
+          console.error('Kiosk auto-login failed:', e.message);
+          if (ls) ls.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#F0F5FB;gap:16px;"><div style="font-size:48px;">⚠️</div><div style="font-size:16px;font-weight:600;color:#E8453C;font-family:sans-serif;">Connection error. Please check internet.</div><button onclick="location.reload()" style="padding:10px 24px;background:#1B4F8A;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Retry</button></div>';
+        });
+    } else {
+      showScreen('login');
+    }
+  }
+});
+
+// ── SCREENS ──────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+window.showScreen = showScreen;
+
+// ── WAKE LOCK ────────────────────────────────────────────────
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      await navigator.wakeLock.request('screen');
+      document.getElementById('wake-indicator').style.display = 'block';
+    } catch(e) {}
+  }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestWakeLock(); });
+
+// ── OFFLINE DETECTION ────────────────────────────────────────
+window.addEventListener('online',  () => document.getElementById('offline-banner').classList.remove('show'));
+window.addEventListener('offline', () => document.getElementById('offline-banner').classList.add('show'));
+
+// ── LOGIN ────────────────────────────────────────────────────
+window.doLogin = async function() {
+  const username = document.getElementById('login-username').value.trim().toLowerCase();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Please enter username and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Logging in…';
+  try {
+    // Resolve username → email
+    const emailSnap = await get(ref(db, `usernames/${username}`));
+    if (!emailSnap.exists()) { errEl.textContent = 'Username not found.'; btn.disabled=false; btn.textContent='Log In'; return; }
+    const email = emailSnap.val();
+    await signInWithEmailAndPassword(auth, email, password);
+    requestWakeLock();
+  } catch(e) {
+    errEl.textContent = 'Invalid username or password.';
+    btn.disabled = false; btn.textContent = 'Log In';
+  }
+};
+
+document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+window.doLogout = async function() {
+  // Release any in_progress ticket back to waiting before logging out
+  if (activeTicketId) {
+    try {
+      await update(ref(db, `queue/${activeTicketId}`), {
+        status: 'waiting', timeServed: 0, agentName: '', counterName: ''
+      });
+    } catch(e) { console.warn('Could not release active ticket:', e.message); }
+  }
+  // Clean up counter presence
+  if (currentCounter && currentUser) {
+    await update(ref(db, `counters/${currentCounter}`), {
+      agentName:'', agentId:'', status:'closed',
+      activeTicket:'', activeTicketId:'', activeTicketStartTime:0
+    });
+  }
+  clearListeners();
+  clearInterval(timerInterval);
+  currentUser=null; currentRole=null; currentCounter=null; activeTicketId=null; activeTicketData=null;
+  document.getElementById('login-username').value='';
+  document.getElementById('login-password').value='';
+  document.getElementById('login-error').textContent='';
+  await signOut(auth);
+};
+
+// ── COUNTER SELECT ───────────────────────────────────────────
+function buildCounterSelect() {
+  document.getElementById('counter-select-sub').textContent = `Welcome, ${currentAgentName}. Please select your counter.`;
+  const grid = document.getElementById('counter-grid');
+  grid.innerHTML = '';
+  const available = currentRole === 'cashier'
+    ? COUNTERS.filter(c => c.role === 'cashier')
+    : COUNTERS.filter(c => c.role === 'pss');
+  available.forEach(c => {
+    const btn = document.createElement('div');
+    btn.className = 'counter-btn';
+    btn.dataset.id = c.id;
+    btn.innerHTML = `<div class="c-name">${c.label}</div><div class="c-sub">${c.role === 'cashier' ? 'Cashier' : 'Registration'}</div>`;
+    btn.onclick = () => {
+      grid.querySelectorAll('.counter-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      currentCounter = c.id;
+      document.getElementById('counter-confirm-btn').disabled = false;
+    };
+    grid.appendChild(btn);
+  });
+}
+
+window.confirmCounter = async function() {
+  if (!currentCounter) return;
+  const counterLabel = (COUNTERS.find(c => c.id === currentCounter)||{}).label || currentCounter;
+
+  // Release any orphaned in_progress tickets from this counter back to waiting
+  try {
+    const qSnap = await get(ref(db, 'queue'));
+    if (qSnap.exists()) {
+      const releases = [];
+      qSnap.forEach(child => {
+        const d = child.val();
+        if (d.status === 'in_progress' && d.counterName === counterLabel) {
+          releases.push(update(ref(db, `queue/${child.key}`), {
+            status: 'waiting', timeServed: 0, agentName: '', counterName: ''
+          }));
+        }
+      });
+      if (releases.length > 0) {
+        await Promise.all(releases);
+        console.log(`Released ${releases.length} orphaned ticket(s) for ${counterLabel}`);
+      }
+    }
+  } catch(e) { console.warn('Orphan release failed:', e.message); }
+
+  // Register presence in Firebase
+  await update(ref(db, `counters/${currentCounter}`), {
+    agentName: currentAgentName, agentId: currentUser.uid,
+    status: 'active', activeTicket: '', activeTicketId: '',
+    activeTicketStartTime: 0, avgService: 0, served: 0
+  });
+  showScreen('pss');
+  initPSS();
+};
+
+// ── ISSUER ───────────────────────────────────────────────────
+const KIOSK_SERVICES = {
+  walkin:      { name:'Walk-In',           prPrefix:'A', regPrefix:'B' },
+  appointment: { name:'With Appointment',  prPrefix:'C', regPrefix:'D' },
+  payment:     { name:'Payment',           prPrefix:'E', regPrefix:'F' },
+  inquiry:     { name:'Inquiry / For Scheduling', prPrefix:'G', regPrefix:'H' },
+  extraction:  { name:'Blood Extraction',  prPrefix:'I', regPrefix:'J' },
+  labresults:  { name:'Lab Results',       prPrefix:'K', regPrefix:'L' },
+  radiology:   { name:'Radiology Results', prPrefix:'M', regPrefix:'N' }
+};
+let kioskSelectedService = null;
+let kioskIdleTimer = null;
+let kioskReturnTimer = null;
+let kioskIdleLongPress = null;
+// ── KIOSK ──────────────────────────────────────────────────
+function initIssuer() {
+  requestWakeLock();
+  // Only show STAFF button on tablet (screen > 768px)
+  var staffBtn = document.getElementById('kiosk-tl-btn');
+  if (staffBtn) {
+    if (window.innerWidth < 768) {
+      staffBtn.style.display = 'none';
+    }
+  }
+  setupKioskLongPress();
+  kioskShowIdle();
+  // Start listening for patient's ticket status (QR mode only)
+  initIssuerAlerts();
+}
+
+function setupKioskLongPress() {
+  function showTLMenu() {
+    var menu = document.getElementById('kiosk-tl-menu');
+    if (menu) {
+      menu.style.display = 'block';
+      setTimeout(function() { if(menu.style.display==='block') menu.style.display='none'; }, 8000);
+    }
+  }
+  function attachLongPress(el) {
+    if (!el) return;
+    el.addEventListener('mousedown', function() { kioskIdleLongPress = setTimeout(showTLMenu, 3000); });
+    el.addEventListener('mouseup', function() { clearTimeout(kioskIdleLongPress); });
+    el.addEventListener('mouseleave', function() { clearTimeout(kioskIdleLongPress); });
+    el.addEventListener('touchstart', function(e) { e.preventDefault(); kioskIdleLongPress = setTimeout(showTLMenu, 3000); }, { passive:false });
+    el.addEventListener('touchend', function() { clearTimeout(kioskIdleLongPress); });
+    el.style.cursor = 'default';
+  }
+  // Attach to logo AND all hospital name headers (accessible from every screen)
+  attachLongPress(document.getElementById('ki-logo-longpress'));
+  document.querySelectorAll('.kiosk-header-hospital, .ki-hospital').forEach(attachLongPress);
+}
+
+function kioskShowIdle() {
+  clearTimeout(kioskReturnTimer);
+  clearTimeout(kioskIdleTimer);
+  document.getElementById('kiosk-idle').style.display = 'flex';
+  document.getElementById('kiosk-service').style.display = 'none';
+  document.getElementById('kiosk-priority').style.display = 'none';
+  document.getElementById('kiosk-warn').style.display = 'none';
+  document.getElementById('kiosk-ticket').style.display = 'none';
+  // Show recalled ticket only on patient's phone (QR mode), never on staff tablet
+  try {
+    var banner = document.getElementById('ki-recall-banner');
+    if (banner) banner.style.display = 'none';
+    if (_isKioskMode) {
+      var saved = localStorage.getItem('bqms_my_ticket');
+      if (saved) {
+        var t = JSON.parse(saved);
+        var today = new Date().toLocaleDateString('en-PH');
+        if (t.date === today) {
+          document.getElementById('ki-recall-num').textContent  = t.num;
+          document.getElementById('ki-recall-svc').textContent  = t.svc;
+          document.getElementById('ki-recall-time').textContent = 'Issued at ' + t.time;
+          banner.style.display = 'block';
+        } else {
+          localStorage.removeItem('bqms_my_ticket');
+        }
+      }
+    }
+  } catch(e) {}
+}
+
+function kioskWakeUp() {
+  clearTimeout(kioskIdleTimer);
+  // Check if patient already has a ticket today (Option B) — QR mode only
+  try {
+    var saved = JSON.parse(localStorage.getItem('bqms_my_ticket') || 'null');
+    if (_isKioskMode && saved && saved.date === new Date().toLocaleDateString('en-PH')) {
+      // Show warning screen
+      document.getElementById('kiosk-warn-num').textContent  = saved.num;
+      document.getElementById('kiosk-warn-svc').textContent  = saved.svc;
+      document.getElementById('kiosk-warn-time').textContent = 'Issued at ' + saved.time;
+      document.getElementById('kiosk-idle').style.display    = 'none';
+      document.getElementById('kiosk-service').style.display = 'none';
+      document.getElementById('kiosk-priority').style.display= 'none';
+      document.getElementById('kiosk-warn').style.display    = 'flex';
+      document.getElementById('kiosk-ticket').style.display  = 'none';
+      kioskResetIdleTimer();
+      return;
+    }
+  } catch(e) {}
+  kioskShowService();
+  kioskResetIdleTimer();
+}
+window.kioskWakeUp = kioskWakeUp;
+
+window.kioskWarnKeep = function() {
+  // Patient wants to keep existing number — show it again
+  try {
+    var saved = JSON.parse(localStorage.getItem('bqms_my_ticket') || 'null');
+    if (saved) {
+      document.getElementById('kiosk-ticket-num').textContent = saved.num;
+      document.getElementById('kiosk-ticket-svc').textContent = saved.svc;
+      var badge = document.getElementById('kiosk-ticket-badge');
+      if (badge) badge.style.display = saved.priority ? 'inline-block' : 'none';
+    }
+  } catch(e) {}
+  document.getElementById('kiosk-warn').style.display   = 'none';
+  document.getElementById('kiosk-ticket').style.display = 'flex';
+  kioskStartReturnTimer();
+};
+
+window.kioskWarnNew = function() {
+  // Patient wants a new number — clear old ticket, detach old listener
+  try { localStorage.removeItem('bqms_my_ticket'); } catch(e) {}
+  if (_patientAlertListener) {
+    try { _patientAlertListener(); } catch(e) {}
+    _patientAlertListener = null;
+  }
+  _patientAlertShown = false;
+  document.getElementById('kiosk-warn').style.display = 'none';
+  kioskShowService();
+  kioskResetIdleTimer();
+};
+
+function kioskShowService() {
+  document.getElementById('kiosk-idle').style.display = 'none';
+  document.getElementById('kiosk-service').style.display = 'flex';
+  document.getElementById('kiosk-priority').style.display = 'none';
+  document.getElementById('kiosk-warn').style.display = 'none';
+  document.getElementById('kiosk-ticket').style.display = 'none';
+  kioskResetIdleTimer();
+}
+
+window.kioskSelectService = function(svcKey) {
+  kioskSelectedService = svcKey;
+  const svc = KIOSK_SERVICES[svcKey];
+  const label = document.getElementById('kiosk-selected-label');
+  label.innerHTML = '&#x2714; ' + svc.name;
+  document.getElementById('kiosk-idle').style.display = 'none';
+  document.getElementById('kiosk-service').style.display = 'none';
+  document.getElementById('kiosk-priority').style.display = 'flex';
+  document.getElementById('kiosk-ticket').style.display = 'none';
+  kioskResetIdleTimer();
+};
+
+window.kioskShowService = kioskShowService;
+
+window.kioskIssueTicket = async function(isPriority) {
+  if (!kioskSelectedService) return;
+  const svc = KIOSK_SERVICES[kioskSelectedService];
+  const prefix = isPriority ? svc.prPrefix : svc.regPrefix;
+  const fullService = SERVICES.find(function(s){ return s.prefix === prefix; });
+  if (!fullService) return;
+
+  const today = getToday();
+  const counterRef = ref(db, 'config/counters/' + today + '/' + prefix);
+  let newNum;
+  try {
+    const result = await runTransaction(counterRef, function(current){ return (current || 0) + 1; });
+    newNum = result.snapshot.val();
+  } catch(e) { alert('Error issuing ticket. Please try again.'); return; }
+
+  const ticketNum = prefix + String(newNum).padStart(3,'0');
+  const ticketId = push(ref(db, 'queue')).key;
+  await set(ref(db, 'queue/' + ticketId), {
+    ticketNumber: ticketNum, service: fullService.label, prefix: prefix,
+    status: 'waiting', arrivalTime: Date.now(), timeServed: 0, timeEnded: 0,
+    agentName: '', counterName: '', transferredFrom: ''
+  });
+
+  // Show ticket
+  document.getElementById('kiosk-ticket-num').textContent = ticketNum;
+  document.getElementById('kiosk-ticket-svc').textContent = fullService.label;
+  const badge = document.getElementById('kiosk-ticket-badge');
+  badge.style.display = isPriority ? 'inline-block' : 'none';
+
+  document.getElementById('kiosk-idle').style.display = 'none';
+  document.getElementById('kiosk-service').style.display = 'none';
+  document.getElementById('kiosk-priority').style.display = 'none';
+  document.getElementById('kiosk-ticket').style.display = 'flex';
+  // Show photo reminder only on staff tablet (not QR phone)
+  var photoReminder = document.getElementById('kiosk-photo-reminder');
+  if (photoReminder) photoReminder.style.display = _isKioskMode ? 'none' : 'block';
+
+  // Save ticket to localStorage so patient can recall it
+  try {
+    var ticketData = {
+      num: ticketNum,
+      svc: fullService.label,
+      priority: isPriority,
+      time: new Date().toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit', hour12:true }),
+      date: new Date().toLocaleDateString('en-PH')
+    };
+    localStorage.setItem('bqms_my_ticket', JSON.stringify(ticketData));
+    // Restart alert listener with the new ticket number
+    startPatientAlertListener();
+  } catch(e) {}
+
+  playChime();
+  kioskStartReturnTimer();
+};
+
+function kioskStartReturnTimer() {
+  clearTimeout(kioskReturnTimer);
+  // Tablet kiosk: 10s (time to take photo), QR phone: 5s
+  let secs = _isKioskMode ? 5 : 10;
+  const timerEl = document.getElementById('kiosk-timer');
+  if (timerEl) timerEl.textContent = 'Returning to home in ' + secs + 's...';
+  const interval = setInterval(function() {
+    secs--;
+    if (timerEl) timerEl.textContent = 'Returning to home in ' + secs + 's...';
+    if (secs <= 0) { clearInterval(interval); kioskShowIdle(); }
+  }, 1000);
+  kioskReturnTimer = interval;
+}
+
+function kioskResetIdleTimer() {
+  clearTimeout(kioskIdleTimer);
+  kioskIdleTimer = setTimeout(function() { kioskShowIdle(); }, 60000);
+}
+
+function listenQueueCounts() {
+  const qRef = ref(db, 'queue');
+  const listener = onValue(qRef, snap => {
+    const counts = {};
+    SERVICES.forEach(s => { counts[s.prefix] = 0; });
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const d = child.val();
+        if (d.status === 'waiting' && counts[d.prefix] !== undefined) counts[d.prefix]++;
+      });
+    }
+    SERVICES.forEach(s => {
+      const el = document.getElementById(`sbcount-${s.prefix}`);
+      if (el) el.textContent = `${counts[s.prefix]} waiting`;
+      const btn = document.getElementById(`svcbtn-${s.prefix}`);
+      if (btn) {
+        let wi = btn.querySelector('.sb-waiting');
+        if (counts[s.prefix] >= 10) {
+          if (!wi) { wi = document.createElement('span'); wi.className='sb-waiting'; btn.appendChild(wi); }
+          wi.textContent = counts[s.prefix];
+          wi.className = counts[s.prefix] >= 10 ? 'sb-waiting warn' : 'sb-waiting';
+        } else if (wi) wi.remove();
+      }
+    });
+    queueCache = counts;
+  });
+  queueListeners.push({ ref: qRef, listener });
+}
+
+// ── PSS ──────────────────────────────────────────────────────
+function initPSS() {
+  const counterInfo = COUNTERS.find(c => c.id === currentCounter);
+  document.getElementById('pss-counter-label').textContent = counterInfo ? counterInfo.label : currentCounter;
+  document.getElementById('pss-agent-label').textContent = currentAgentName;
+  listenPSSQueue();
+  listenQueueStatusBar();
+  preloadVoices();
+  // If TL is acting as PSS, add "Back to TL Dashboard" button
+  if (window._tlActingAsPSS) {
+    const topbarRight = document.querySelector('#screen-pss .topbar-right');
+    if (topbarRight && !document.getElementById('back-to-tl-btn')) {
+      const backBtn = document.createElement('button');
+      backBtn.id = 'back-to-tl-btn';
+      backBtn.className = 'btn btn-sm btn-outline';
+      backBtn.style.cssText = 'font-size:12px;padding:6px 12px;display:flex;align-items:center;gap:5px;margin-right:4px;';
+      backBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> TL Dashboard';
+      backBtn.onclick = async function() {
+        window._tlActingAsPSS = false;
+        currentRole = 'tl';
+        // Clear counter presence
+        if (currentCounter) {
+          try { await update(ref(db, 'counters/' + currentCounter), { status:'offline', activeTicket:'', activeTicketId:'', agentName:'', agentId:'' }); } catch(e) {}
+        }
+        currentCounter = null;
+        const btn = document.getElementById('back-to-tl-btn');
+        if (btn) btn.remove();
+        showScreen('tl');
+        initTL();
+      };
+      topbarRight.insertBefore(backBtn, topbarRight.firstChild);
+    }
+  }
+}
+
+// Queue Status Bar — shows all-service waiting counts for PSS
+function listenQueueStatusBar() {
+  const qRef = ref(db, 'queue');
+  const listener = onValue(qRef, snap => {
+    // Count waiting tickets per prefix across ALL services
+    const counts = {};
+    SERVICES.forEach(s => { counts[s.prefix] = 0; });
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const d = child.val();
+        if (d.status === 'waiting' && counts[d.prefix] !== undefined) counts[d.prefix]++;
+      });
+    }
+    renderQueueStatusBar(counts);
+  });
+  queueListeners.push({ ref: qRef, listener });
+}
+
+function renderQueueStatusBar(counts) {
+  const bar = document.getElementById('pss-qsb-inner');
+  if (!bar) return;
+  const groups = [
+    { label: 'Walk-In',      pr: 'A', reg: 'B', css: 'qsb-pr'        },
+    { label: 'Appointment',  pr: 'C', reg: 'D', css: ''               },
+    { label: 'Inquiry',      pr: 'G', reg: 'H', css: ''               },
+    { label: 'Cashier',      pr: 'E', reg: 'F', css: 'qsb-cashier'    },
+    { label: 'Extraction',   pr: 'I', reg: 'J', css: 'qsb-extraction' },
+    { label: 'Lab Results',  pr: 'K', reg: 'L', css: 'qsb-results'    },
+    { label: 'Xray Results', pr: 'M', reg: 'N', css: 'qsb-results'    },
+  ];
+  let html = '<span class="qsb-label">Live Queues</span>';
+  groups.forEach(function(grp, gi) {
+    var pc = counts[grp.pr]  || 0;
+    var rc = counts[grp.reg] || 0;
+    var pw = pc  >= 10 ? ' qsb-alert' : pc  >= 5 ? ' qsb-warn' : '';
+    var rw = rc >= 10 ? ' qsb-alert' : rc >= 5 ? ' qsb-warn' : '';
+    html += '<div class="qsb-item ' + grp.css + pw + '">'
+          + '<span class="qsb-prefix">' + grp.pr + '</span>'
+          + '<span class="qsb-svc">' + grp.label + ' Pr</span>'
+          + '<span class="qsb-count">' + pc + '</span></div>'
+          + '<div class="qsb-item ' + grp.css + rw + '">'
+          + '<span class="qsb-prefix" style="background:var(--primary)">' + grp.reg + '</span>'
+          + '<span class="qsb-svc">' + grp.label + ' Reg</span>'
+          + '<span class="qsb-count">' + rc + '</span></div>';
+    if (gi < groups.length - 1) html += '<div class="qsb-divider"></div>';
+  });
+  bar.innerHTML = html;
+}
+
+function getPSSServices() {
+  if (currentRole === 'cashier') return CASHIER_SERVICES;
+  return PSS_SERVICES;
+}
+
+function listenPSSQueue() {
+  const qRef = ref(db, 'queue');
+  const listener = onValue(qRef, snap => {
+    const items = [];
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const d = child.val();
+        if (['waiting','in_progress'].includes(d.status)) {
+          const svc = SERVICES.find(s => s.prefix === d.prefix);
+          if (!svc) return;
+          if (currentRole === 'cashier') {
+            // Cashier ONLY sees Payment (E/F)
+            if (svc.cat === 'Payment') {
+              items.push({ id: child.key, ...d, monitorOnly: false });
+            }
+          } else {
+            // Registration PSS: all services; Extraction + Payment = monitor-only
+            const isMonitorOnly = (svc.cat === 'Extraction') || (svc.cat === 'Payment');
+            items.push({ id: child.key, ...d, monitorOnly: isMonitorOnly });
+          }
+        }
+      });
+    }
+    items.sort((a,b) => a.arrivalTime - b.arrivalTime);
+    renderPSSQueue(items);
+  }, { onlyOnce: false });
+  queueListeners.push({ ref: qRef, listener });
+}
+
+function renderPSSQueue(items) {
+  const list = document.getElementById('pss-queue-list');
+  const waiting = items.filter(i => i.status === 'waiting');
+  document.getElementById('pss-queue-count').textContent = waiting.length;
+  list.innerHTML = '';
+
+  if (items.length === 0) {
+    list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-linecap="round" stroke-linejoin="round"/></svg><p>Queue is empty</p></div>';
+    return;
+  }
+
+  // Define combined groups — E/F together as Cashier, I/J together as Extraction
+  // These are pinned to the TOP for PSS monitoring
+  var COMBINED_GROUPS = [
+    { key: 'cashier',    label: 'Payment — Cashier',       prefixes: ['E','F'], headerClass: 'qgh-cashier'    },
+    { key: 'extraction', label: 'Extraction — MedTech',    prefixes: ['I','J'], headerClass: 'qgh-extraction'  },
+  ];
+
+  // Render pinned groups first (Cashier + Extraction)
+  var pinnedPrefixes = ['E','F','I','J'];
+  var renderedAny = false;
+
+  COMBINED_GROUPS.forEach(function(grp) {
+    var grpItems = items.filter(function(i){ return grp.prefixes.indexOf(i.prefix) !== -1; });
+    if (grpItems.length === 0) return;
+    renderedAny = true;
+    var waitCount   = grpItems.filter(function(i){ return i.status==='waiting'; }).length;
+    var inProgCount = grpItems.filter(function(i){ return i.status==='in_progress'; }).length;
+
+    var header = document.createElement('div');
+    header.className = 'queue-group-header ' + grp.headerClass;
+    header.innerHTML = '<span class="qgh-icon">' + (grp.key==='cashier' ? '💳' : '🔬') + '</span>'
+      + '<span class="qgh-name">' + grp.label + '</span>'
+      + '<span class="qgh-counts">'
+      + (waitCount > 0 ? '<span class="qgh-waiting">' + waitCount + ' waiting</span>' : '')
+      + (inProgCount > 0 ? '<span class="qgh-inprog">' + inProgCount + ' in progress</span>' : '')
+      + '</span>';
+    list.appendChild(header);
+
+    grpItems.forEach(function(item) {
+      var el = document.createElement('div');
+      var isMonitor = item.monitorOnly;
+      el.className = 'queue-item' + (isMonitor ? ' monitor-only' : '')
+        + (item.id === activeTicketId ? ' selected' : '')
+        + (item.status === 'in_progress' ? ' in-progress' : '');
+      var wait = formatDuration(Date.now() - item.arrivalTime);
+      el.innerHTML = '<div class="qi-num">' + item.ticketNumber + '</div>'
+        + '<div class="qi-info">'
+        + '<div class="qi-service" style="font-size:11px;color:var(--text2)">' + item.service + '</div>'
+        + '<div class="qi-time">' + formatTime(item.arrivalTime) + ' · waited ' + wait + '</div>'
+        + '</div>'
+        + (isMonitor
+          ? '<span class="qi-status" style="background:#F1F5F9;color:var(--text3)">Monitor</span>'
+          : '<span class="qi-status ' + (item.status==='waiting' ? 'st-waiting' : 'st-progress') + '">'
+            + (item.status==='waiting' ? 'Waiting' : 'In Progress') + '</span>');
+      if (!isMonitor) el.onclick = function(){ callTicket(item); };
+      list.appendChild(el);
+    });
+  });
+
+  // Divider between pinned and own queue
+  var ownItems = items.filter(function(i){ return pinnedPrefixes.indexOf(i.prefix) === -1; });
+  if (ownItems.length > 0 && renderedAny) {
+    var div = document.createElement('div');
+    div.style.cssText = 'height:4px;background:var(--primary);opacity:.15;flex-shrink:0;';
+    list.appendChild(div);
+  }
+
+  // Render remaining services grouped by service label
+  var ownGroups = {};
+  var ownGroupOrder = [];
+  ownItems.forEach(function(item) {
+    if (!ownGroups[item.service]) { ownGroups[item.service] = []; ownGroupOrder.push(item.service); }
+    ownGroups[item.service].push(item);
+  });
+
+  ownGroupOrder.forEach(function(serviceName) {
+    var groupItems = ownGroups[serviceName];
+    var svcObj = SERVICES.find(function(s){ return s.label === serviceName; });
+    var waitCount   = groupItems.filter(function(i){ return i.status==='waiting'; }).length;
+    var inProgCount = groupItems.filter(function(i){ return i.status==='in_progress'; }).length;
+
+    var header = document.createElement('div');
+    header.className = 'queue-group-header';
+    header.innerHTML = '<span class="qgh-prefix">' + (svcObj ? svcObj.prefix : '?') + '</span>'
+      + '<span class="qgh-name">' + serviceName + '</span>'
+      + '<span class="qgh-counts">'
+      + (waitCount > 0 ? '<span class="qgh-waiting">' + waitCount + ' waiting</span>' : '')
+      + (inProgCount > 0 ? '<span class="qgh-inprog">' + inProgCount + ' in progress</span>' : '')
+      + '</span>';
+    list.appendChild(header);
+
+    groupItems.forEach(function(item) {
+      var el = document.createElement('div');
+      el.className = 'queue-item'
+        + (item.id === activeTicketId ? ' selected' : '')
+        + (item.status === 'in_progress' ? ' in-progress' : '');
+      var wait = formatDuration(Date.now() - item.arrivalTime);
+      el.innerHTML = '<div class="qi-num">' + item.ticketNumber + '</div>'
+        + '<div class="qi-info">'
+        + '<div class="qi-time">' + formatTime(item.arrivalTime) + ' · waited ' + wait + '</div>'
+        + '</div>'
+        + '<span class="qi-status ' + (item.status==='waiting' ? 'st-waiting' : 'st-progress') + '">'
+        + (item.status==='waiting' ? 'Waiting' : 'In Progress') + '</span>';
+      el.onclick = function(){ callTicket(item); };
+      list.appendChild(el);
+    });
+  });
+}
+
+async function callTicket(item) {
+  if (item.status === 'in_progress' && item.counterName !== (COUNTERS.find(c=>c.id===currentCounter)||{}).label) {
+    alert(`Ticket ${item.ticketNumber} is already being served at ${item.counterName}.`); return;
+  }
+  if (activeTicketId && activeTicketId !== item.id) {
+    if (!confirm(`You have an active ticket. Switch to ${item.ticketNumber}?`)) return;
+  }
+  const counterLabel = (COUNTERS.find(c=>c.id===currentCounter)||{}).label || currentCounter;
+  try {
+    await runTransaction(ref(db, `queue/${item.id}/status`), current => {
+      if (current === 'waiting') return 'in_progress';
+      if (current === 'in_progress') return current;
+      return; // abort if already done/cancelled
+    });
+    await update(ref(db, `queue/${item.id}`), {
+      status: 'in_progress', timeServed: Date.now(),
+      agentName: currentAgentName, counterName: counterLabel
+    });
+    await update(ref(db, `counters/${currentCounter}`), { activeTicket: item.ticketNumber, activeTicketId: item.id, activeTicketStartTime: Date.now() });
+    activeTicketId = item.id;
+    activeTicketData = { ...item, timeServed: Date.now(), agentName: currentAgentName, counterName: counterLabel };
+    renderActiveTicket();
+    playChime();
+  } catch(e) { alert('Could not call this ticket. It may have been claimed by another counter.'); }
+}
+
+function renderActiveTicket() {
+  var d = document.getElementById('pss-active-display');
+  var ab = document.getElementById('pss-action-buttons');
+  if (!activeTicketData) {
+    d.innerHTML = '<div class="no-active">No active ticket.<br>Select one from the queue.</div>';
+    ab.style.display='none'; return;
+  }
+  d.innerHTML = '<div class="atd-label">Now Serving</div>'
+    + '<div class="atd-number atd-number-tappable" id="atd-num-display" onclick="reAnnounceTicket()" title="Tap to re-announce">'
+    + activeTicketData.ticketNumber
+    + '<div class="atd-reannounce-hint">&#x1F50A; Tap to re-announce</div>'
+    + '</div>'
+    + '<div class="atd-service">' + activeTicketData.service + '</div>'
+    + '<div class="atd-timer" id="pss-elapsed">0:00</div>';
+  ab.style.display = 'grid';
+  clearInterval(timerInterval);
+  timerInterval = setInterval(function() {
+    var el = document.getElementById('pss-elapsed');
+    if (el && activeTicketData) el.textContent = formatDuration(Date.now() - activeTicketData.timeServed);
+  }, 1000);
+}
+
+window.reannounceMT = function() {
+  if (!activeTicketData) return;
+  var text = 'Now serving ticket ' + activeTicketData.ticketNumber.split('').join(' ') + ' at Extraction';
+  var numEl = document.getElementById('mt-num-display');
+  if (numEl) { numEl.style.background = 'rgba(124,58,237,.12)'; setTimeout(function(){ if(numEl) numEl.style.background=''; }, 400); }
+  speakReAnnounce(text);
+};
+
+window.reAnnounceTicket = function() {
+  if (!activeTicketData) return;
+  var counterLabel = (COUNTERS.find(function(c){ return c.id===currentCounter; })||{}).label || currentCounter;
+  var text = 'Now serving ticket ' + activeTicketData.ticketNumber.split('').join(' ') + ' at ' + counterLabel;
+  var numEl = document.getElementById('atd-num-display');
+  if (numEl) { numEl.style.background = 'rgba(37,99,176,.15)'; setTimeout(function(){ if(numEl) numEl.style.background=''; }, 400); }
+  // Tap IS the user gesture — directly call speakAnnouncement (same function as primary)
+  speakReAnnounce(text);
+};
+
+window.endTransaction = async function(action) {
+  if (!activeTicketId) return;
+  const now = Date.now();
+  await update(ref(db, `queue/${activeTicketId}`), { status: action==='close'?'done':'cancelled', timeEnded: now });
+  // Update counter stats
+  const csnap = await get(ref(db, `counters/${currentCounter}`));
+  const cdata = csnap.val() || {};
+  const served = (cdata.served || 0) + (action==='close'?1:0);
+  const svcTime = activeTicketData ? now - (activeTicketData.timeServed || now) : 0;
+  const prevAvg = cdata.avgService || 0;
+  const newAvg = served > 0 ? Math.round((prevAvg * (served-1) + svcTime/1000) / served) : 0;
+  await update(ref(db, `counters/${currentCounter}`), { served, avgService: newAvg, activeTicket:'', activeTicketId:'' });
+  clearInterval(timerInterval);
+  activeTicketId = null; activeTicketData = null;
+  renderActiveTicket();
+};
+
+window.toggleBreak = async function() {
+  const badge = document.getElementById('pss-status-badge');
+  const isBreak = badge.classList.contains('badge-break');
+  badge.className = `status-badge ${isBreak ? 'badge-active' : 'badge-break'}`;
+  badge.textContent = isBreak ? 'ACTIVE' : 'ON BREAK';
+  await update(ref(db, `counters/${currentCounter}`), { status: isBreak ? 'active' : 'break' });
+};
+
+// ── MEDTECH ──────────────────────────────────────────────────
+function initMedtech() {
+  document.getElementById('mt-agent-label').textContent = currentAgentName;
+  preloadVoices();
+  // Register presence
+  update(ref(db, `counters/extraction`), { agentName: currentAgentName, agentId: currentUser.uid, status:'active', activeTicket:'', activeTicketId:'', served:0, avgService:0 });
+  const qRef = ref(db, 'queue');
+  const listener = onValue(qRef, snap => {
+    const items = [];
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const d = child.val();
+        if (['waiting','in_progress'].includes(d.status) && MEDTECH_SERVICES.find(s=>s.prefix===d.prefix))
+          items.push({ id:child.key, ...d });
+      });
+    }
+    items.sort((a,b) => a.arrivalTime - b.arrivalTime);
+    renderMTQueue(items);
+  });
+  queueListeners.push({ ref: qRef, listener });
+}
+
+function renderMTQueue(items) {
+  const list = document.getElementById('mt-queue-list');
+  document.getElementById('mt-queue-count').textContent = items.filter(i=>i.status==='waiting').length;
+  list.innerHTML = '';
+  if (items.length===0) { list.innerHTML='<div class="empty-state"><p>No extraction tickets</p></div>'; return; }
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className=`queue-item${item.id===activeTicketId?' selected':''}${item.status==='in_progress'?' in-progress':''}`;
+    const wait = formatDuration(Date.now()-item.arrivalTime);
+    el.innerHTML=`<div class="qi-num">${item.ticketNumber}</div><div class="qi-info"><div class="qi-service">${item.service}</div><div class="qi-time">${formatTime(item.arrivalTime)} · waited ${wait}</div></div><span class="qi-status ${item.status==='waiting'?'st-waiting':'st-progress'}">${item.status==='waiting'?'Waiting':'In Progress'}</span>`;
+    el.onclick = () => callMTTicket(item);
+    list.appendChild(el);
+  });
+}
+
+async function callMTTicket(item) {
+  if (item.status==='in_progress' && item.counterName!=='Extraction') { alert(`Already being served.`); return; }
+  try {
+    await runTransaction(ref(db,`queue/${item.id}/status`), current => { if(current==='waiting') return 'in_progress'; return; });
+    await update(ref(db,`queue/${item.id}`), { status:'in_progress', timeServed:Date.now(), agentName:currentAgentName, counterName:'Extraction' });
+    await update(ref(db,'counters/extraction'), { activeTicket:item.ticketNumber, activeTicketId:item.id, activeTicketStartTime:Date.now() });
+    activeTicketId=item.id; activeTicketData={...item, timeServed:Date.now()};
+    renderMTActive(); playChime();
+  } catch(e) { alert('Could not call ticket.'); }
+}
+
+function renderMTActive() {
+  const d = document.getElementById('mt-active-display');
+  const ab = document.getElementById('mt-action-buttons');
+  if (!activeTicketData) { d.innerHTML='<div class="no-active">No active ticket.</div>'; ab.style.display='none'; return; }
+  d.innerHTML = '<div class="atd-label">Now Serving</div>'
+    + '<div class="atd-number atd-number-tappable" id="mt-num-display" onclick="reannounceMT()" title="Tap to re-announce">'
+    + activeTicketData.ticketNumber
+    + '<div class="atd-reannounce-hint">&#x1F50A; Tap to re-announce</div>'
+    + '</div>'
+    + '<div class="atd-service">' + activeTicketData.service + '</div>'
+    + '<div class="atd-timer" id="mt-elapsed">0:00</div>';
+  ab.style.display='grid';
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const el = document.getElementById('mt-elapsed');
+    if(el && activeTicketData) el.textContent = formatDuration(Date.now()-activeTicketData.timeServed);
+  },1000);
+}
+
+window.endTransactionMT = async function(action) {
+  if (!activeTicketId) return;
+  const now = Date.now();
+  await update(ref(db,`queue/${activeTicketId}`), { status:action==='close'?'done':'cancelled', timeEnded:now });
+  const csnap = await get(ref(db,'counters/extraction'));
+  const cdata = csnap.val()||{};
+  const served = (cdata.served||0)+(action==='close'?1:0);
+  const svcTime = activeTicketData ? now-(activeTicketData.timeServed||now) : 0;
+  const newAvg = served>0 ? Math.round(((cdata.avgService||0)*(served-1)+svcTime/1000)/served) : 0;
+  await update(ref(db,'counters/extraction'), { served, avgService:newAvg, activeTicket:'', activeTicketId:'' });
+  clearInterval(timerInterval);
+  activeTicketId=null; activeTicketData=null; renderMTActive();
+};
+
+// ── TRANSFER ─────────────────────────────────────────────────
+window.openTransfer = function(mode) {
+  if (!activeTicketId) return;
+  transferMode = mode;
+  document.getElementById('transfer-modal-title').textContent = mode==='close' ? 'Close & Transfer To' : 'Cancel & Transfer To';
+  const list = document.getElementById('transfer-list');
+  list.innerHTML = '';
+  SERVICES.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'transfer-item';
+    el.innerHTML = `<div class="ti-prefix">[${s.prefix}]</div><div class="ti-name">${s.label}</div>`;
+    el.onclick = () => executeTransfer(s);
+    list.appendChild(el);
+  });
+  document.getElementById('transfer-modal').classList.add('show');
+};
+
+window.closeTransfer = function() { document.getElementById('transfer-modal').classList.remove('show'); };
+
+async function executeTransfer(targetService) {
+  closeTransfer();
+  if (!activeTicketId || !activeTicketData) return;
+  const now = Date.now();
+  const today = getToday();
+  // Close/cancel current ticket
+  await update(ref(db,`queue/${activeTicketId}`), { status: transferMode==='close'?'done':'cancelled', timeEnded:now });
+  // Create new ticket in target service
+  const counterRef2 = ref(db,`config/counters/${today}/${targetService.prefix}`);
+  let newNum;
+  try {
+    const res = await runTransaction(counterRef2, c => (c||0)+1);
+    newNum = res.snapshot.val();
+  } catch(e) { alert('Error creating transfer ticket.'); return; }
+  const newTicketNum = targetService.prefix + String(newNum).padStart(3,'0');
+  const newTicketId = push(ref(db,'queue')).key;
+  await set(ref(db,`queue/${newTicketId}`), {
+    ticketNumber:newTicketNum, service:targetService.label, prefix:targetService.prefix,
+    status:'waiting', arrivalTime:Date.now(), timeServed:0, timeEnded:0,
+    agentName:'', counterName:'', transferredFrom:activeTicketId
+  });
+  // Update counter stats
+  const csnap = await get(ref(db,`counters/${currentCounter}`));
+  const cdata = csnap.val()||{};
+  const served = (cdata.served||0)+(transferMode==='close'?1:0);
+  const svcTime = now-(activeTicketData.timeServed||now);
+  const newAvg = served>0 ? Math.round(((cdata.avgService||0)*(served-1)+svcTime/1000)/served) : 0;
+  await update(ref(db,`counters/${currentCounter}`), { served, avgService:newAvg, activeTicket:'', activeTicketId:'' });
+  clearInterval(timerInterval);
+  activeTicketId=null; activeTicketData=null; renderActiveTicket();
+  alert(`Transferred → ${newTicketNum} (${targetService.label})`);
+}
+
+// ── TL DASHBOARD ─────────────────────────────────────────────
+function initTL() {
+  document.getElementById('tl-agent-label').textContent = currentAgentName;
+  listenTLData();
+  loadStaffList();
+  // Set default report dates
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('report-from').value = today;
+  document.getElementById('report-to').value = today;
+}
+
+function listenTLData() {
+  // Listen to ALL queue entries (waiting, in_progress, done, cancelled)
+  const qRef = ref(db,'queue');
+  const listener = onValue(qRef, snap => {
+    const allTickets = [];
+    if (snap.exists()) {
+      snap.forEach(c => {
+        const d = c.val();
+        if (d && d.ticketNumber) allTickets.push({ id:c.key, ...d });
+      });
+    }
+    allTickets.sort((a,b) => (a.arrivalTime||0) - (b.arrivalTime||0));
+    renderTLOverview(allTickets);
+  }, { onlyOnce: false });
+  queueListeners.push({ ref:qRef, listener });
+
+  const cRef = ref(db,'counters');
+  const cListener = onValue(cRef, snap => {
+    const counters = snap.val()||{};
+    renderTLCounters(counters);
+  }, { onlyOnce: false });
+  queueListeners.push({ ref:cRef, listener:cListener });
+}
+
+function renderTLOverview(tickets) {
+  const today = getToday();
+  // Stats
+  const total      = tickets.length;
+  const served     = tickets.filter(t=>t.status==='done').length;
+  const waiting    = tickets.filter(t=>t.status==='waiting').length;
+  const inProg     = tickets.filter(t=>t.status==='in_progress').length;
+  const cancelled  = tickets.filter(t=>t.status==='cancelled').length;
+  const grid = document.getElementById('tl-stats-grid');
+  grid.innerHTML = `
+    <div class="stat-card"><div class="sc-val">${total}</div><div class="sc-lbl">Total Issued</div></div>
+    <div class="stat-card"><div class="sc-val" style="color:var(--success)">${served}</div><div class="sc-lbl">Served</div></div>
+    <div class="stat-card"><div class="sc-val" style="color:var(--warning)">${waiting}</div><div class="sc-lbl">Waiting</div></div>
+    <div class="stat-card"><div class="sc-val" style="color:var(--primary)">${inProg}</div><div class="sc-lbl">In Progress</div></div>
+    <div class="stat-card"><div class="sc-val" style="color:var(--accent)">${cancelled}</div><div class="sc-lbl">Cancelled</div></div>`;
+
+  // Service table
+  const tbody = document.getElementById('tl-service-tbody');
+  tbody.innerHTML = '';
+  SERVICES.forEach(s => {
+    const svcTickets = tickets.filter(t=>t.prefix===s.prefix);
+    if (svcTickets.length===0) return;
+    const sv = svcTickets.filter(t=>t.status==='done').length;
+    const iq = svcTickets.filter(t=>t.status==='waiting').length;
+    const ip = svcTickets.filter(t=>t.status==='in_progress').length;
+    const ca = svcTickets.filter(t=>t.status==='cancelled').length;
+    const doneTimes = svcTickets.filter(t=>t.status==='done'&&t.timeServed&&t.timeEnded).map(t=>t.timeEnded-t.timeServed);
+    const avg = doneTimes.length ? formatDuration(doneTimes.reduce((a,b)=>a+b,0)/doneTimes.length) : '—';
+    const warn = iq >= 10 ? ' style="color:var(--accent);font-weight:700"' : '';
+    tbody.innerHTML += `<tr>
+      <td><span class="prefix-cell">${s.prefix}</span> ${s.label}</td>
+      <td class="num">${svcTickets.length}</td>
+      <td class="num" style="color:var(--success)">${sv}</td>
+      <td class="num"${warn}>${iq}</td>
+      <td class="num" style="color:var(--warning)">${ip}</td>
+      <td class="num" style="color:var(--accent)">${ca}</td>
+      <td class="num">${avg}</td>
+    </tr>`;
+  });
+  if (!tbody.innerHTML) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">No transactions today</td></tr>';
+}
+
+function renderTLCounters(counters) {
+  const container = document.getElementById('tl-counter-cards');
+  container.innerHTML = '';
+
+  const COUNTER_ROLES = {
+    'counter1':   'Cashier',
+    'counter2':   'Registration',
+    'counter3':   'Registration',
+    'counter4':   'Registration',
+    'counter5':   'Registration',
+    'counter6':   'Registration',
+    'extraction': 'MedTech'
+  };
+
+  COUNTERS.forEach(c => {
+    const data     = counters[c.id] || {};
+    const isActive = data.status === 'active' && data.agentName;
+    const isBreak  = data.status === 'break';
+    const roleLabel = COUNTER_ROLES[c.id] || 'Staff';
+
+    const card = document.createElement('div');
+    card.className = 'counter-card-live '
+      + (isActive ? 'active-counter' : isBreak ? 'break-counter' : 'offline-counter');
+
+    // Status badge
+    const badge = isActive
+      ? '<span class="status-badge badge-active">ACTIVE</span>'
+      : isBreak
+      ? '<span class="status-badge badge-break">ON BREAK</span>'
+      : '<span class="status-badge" style="background:var(--surface2);color:var(--text3)">OFFLINE</span>';
+
+    // Active ticket hero block
+    const ticketHtml = data.activeTicket
+      ? '<div class="ccl-ticket-hero">'
+        + '<div class="ccl-ticket-hero-num">' + data.activeTicket + '</div>'
+        + '<div class="ccl-ticket-hero-info">'
+        + '<div class="ccl-ticket-hero-svc">Now Serving</div>'
+        + '<div class="ccl-ticket-hero-timer" id="ctr-timer-' + c.id + '">0:00</div>'
+        + '</div></div>'
+      : '<div class="ccl-no-ticket">'
+        + (isActive ? 'Idle — no active ticket' : isBreak ? 'On break' : 'Not logged in')
+        + '</div>';
+
+    card.innerHTML =
+      '<div class="ccl-band">'
+        + '<div>'
+        + '<div class="ccl-counter-label">' + c.label + ' &nbsp;·&nbsp; ' + roleLabel + '</div>'
+        + '<div class="ccl-name">' + (data.agentName || '—') + '</div>'
+        + '</div>'
+        + badge
+      + '</div>'
+      + ticketHtml
+      + '<div class="ccl-stats">'
+        + '<div class="ccl-stat"><div class="ccl-stat-val" style="color:var(--success)">' + (data.served||0) + '</div><div class="ccl-stat-lbl">Served</div></div>'
+        + '<div class="ccl-stat"><div class="ccl-stat-val" style="color:var(--warning)">' + (data.activeTicket?'1':'0') + '</div><div class="ccl-stat-lbl">In Progress</div></div>'
+        + '<div class="ccl-stat"><div class="ccl-stat-val">' + (data.avgService ? formatSeconds(data.avgService) : '—') + '</div><div class="ccl-stat-lbl">Avg Svc</div></div>'
+      + '</div>';
+
+    container.appendChild(card);
+
+    // Start elapsed timer for active tickets
+    if (data.activeTicket && data.activeTicketStartTime) {
+      const timerId = 'ctr-timer-' + c.id;
+      setInterval(() => {
+        const el = document.getElementById(timerId);
+        if (el) el.textContent = formatDuration(Date.now() - data.activeTicketStartTime);
+      }, 1000);
+    }
+  });
+}
+
+window.switchTLTab = function(tab) {
+  document.querySelectorAll('.tl-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tl-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(`panel-${tab}`).classList.add('active');
+};
+
+// ── REPORTS ──────────────────────────────────────────────────
+window.generateReport = async function() {
+  const from = document.getElementById('report-from').value;
+  const to   = document.getElementById('report-to').value;
+  if (!from||!to) { alert('Please select date range.'); return; }
+  const fromTs = new Date(from).setHours(0,0,0,0);
+  const toTs   = new Date(to).setHours(23,59,59,999);
+  const snap = await get(ref(db,'queue'));
+  const tickets = [];
+  if (snap.exists()) {
+    snap.forEach(c => {
+      const d = c.val();
+      if (d.arrivalTime >= fromTs && d.arrivalTime <= toTs) tickets.push({ id:c.key, ...d });
+    });
+  }
+  tickets.sort((a,b) => a.arrivalTime-b.arrivalTime);
+  reportData = tickets;
+  renderReportTable(tickets, from, to);
+  document.getElementById('export-btn').disabled = tickets.length===0;
+
+  // Append agent summary below the transaction table
+  if (tickets.length > 0) {
+    const agentMap2 = {};
+    tickets.forEach(t => {
+      const a = t.agentName || 'Unknown';
+      if (!agentMap2[a]) agentMap2[a] = { served:0, cancelled:0, totalSvc:0, totalWait:0, svcCount:0 };
+      if (t.status === 'done')      agentMap2[a].served++;
+      if (t.status === 'cancelled') agentMap2[a].cancelled++;
+      if (t.timeServed && t.timeEnded) { agentMap2[a].totalSvc += (t.timeEnded-t.timeServed); agentMap2[a].svcCount++; }
+      if (t.timeServed && t.arrivalTime) { agentMap2[a].totalWait += (t.timeServed-t.arrivalTime); }
+    });
+
+    let agentHtml = '<div style="margin-top:20px"><div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Agent Summary</div>'
+      + '<div class="report-table-wrap"><table class="data-table"><thead><tr>'
+      + '<th>Agent</th><th>Served</th><th>Cancelled</th><th>Avg Svc Time</th><th>Avg Wait Time</th>'
+      + '</tr></thead><tbody>';
+    Object.entries(agentMap2).sort((a,b) => b[1].served - a[1].served).forEach(([agent, d]) => {
+      agentHtml += '<tr><td>' + agent + '</td>'
+        + '<td class="num" style="color:var(--success)">' + d.served + '</td>'
+        + '<td class="num" style="color:var(--accent)">' + d.cancelled + '</td>'
+        + '<td class="num">' + (d.svcCount > 0 ? formatDuration(d.totalSvc/d.svcCount) : '—') + '</td>'
+        + '<td class="num">' + (d.served > 0 ? formatDuration(d.totalWait/d.served) : '—') + '</td></tr>';
+    });
+    agentHtml += '</tbody></table></div></div>';
+    document.getElementById('report-output').insertAdjacentHTML('beforeend', agentHtml);
+  }
+};
+
+function renderReportTable(tickets, from, to) {
+  const out = document.getElementById('report-output');
+  if (tickets.length===0) { out.innerHTML='<div class="card" style="text-align:center;color:var(--text3);padding:30px">No transactions found for selected period.</div>'; return; }
+
+  const total=tickets.length, served=tickets.filter(t=>t.status==='done').length, cancelled=tickets.filter(t=>t.status==='cancelled').length;
+  const svcTimes = tickets.filter(t=>t.status==='done'&&t.timeServed&&t.timeEnded).map(t=>t.timeEnded-t.timeServed);
+  const avgSvc = svcTimes.length ? formatDuration(svcTimes.reduce((a,b)=>a+b,0)/svcTimes.length) : '—';
+
+  let html = `<div class="stats-grid" style="margin-bottom:16px">
+    <div class="stat-card"><div class="sc-val">${total}</div><div class="sc-lbl">Total</div></div>
+    <div class="stat-card"><div class="sc-val" style="color:var(--success)">${served}</div><div class="sc-lbl">Served</div></div>
+    <div class="stat-card"><div class="sc-val" style="color:var(--accent)">${cancelled}</div><div class="sc-lbl">Cancelled</div></div>
+    <div class="stat-card"><div class="sc-val" style="color:var(--primary)">${avgSvc}</div><div class="sc-lbl">Avg Svc Time</div></div>
+  </div>
+  <div class="report-table-wrap"><table class="data-table">
+    <thead><tr><th>Service</th><th>Ticket</th><th>Arrival</th><th>Time Served</th><th>Time Ended</th><th>Wait</th><th>Svc Time</th><th>Agent</th><th>Status</th></tr></thead><tbody>`;
+
+  tickets.forEach(t => {
+    const wait = t.timeServed ? formatDuration(t.timeServed-t.arrivalTime) : '—';
+    const svc  = (t.timeServed&&t.timeEnded) ? formatDuration(t.timeEnded-t.timeServed) : '—';
+    const statusColor = t.status==='done'?'var(--success)':t.status==='cancelled'?'var(--accent)':'var(--warning)';
+    html += `<tr>
+      <td><span class="prefix-cell">${t.prefix}</span> ${t.service}</td>
+      <td class="num">${t.ticketNumber}</td>
+      <td class="num">${formatDateTime(t.arrivalTime)}</td>
+      <td class="num">${t.timeServed ? formatDateTime(t.timeServed) : '—'}</td>
+      <td class="num">${t.timeEnded ? formatDateTime(t.timeEnded) : '—'}</td>
+      <td class="num">${wait}</td>
+      <td class="num">${svc}</td>
+      <td>${t.agentName||'—'}</td>
+      <td><span style="color:${statusColor};font-weight:600;text-transform:capitalize">${t.status}</span></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  out.innerHTML = html;
+}
+
+window.exportReport = async function() {
+  if (!reportData.length) return;
+  const btn = document.getElementById('export-btn');
+  btn.disabled = true; btn.textContent = 'Generating...';
+
+  try {
+    // Dynamically load SheetJS
+    if (!window.XLSX) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+
+    const from = document.getElementById('report-from').value;
+    const to   = document.getElementById('report-to').value;
+    const wb   = XLSX.utils.book_new();
+
+    // ── Sheet 1: All Transactions (matches your existing Excel format) ──
+    const txRows = [];
+    // Group by date — add date header rows like your existing file
+    const byDate = {};
+    reportData.forEach(t => {
+      const d = new Date(t.arrivalTime).toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+      if (!byDate[d]) byDate[d] = [];
+      byDate[d].push(t);
+    });
+
+    Object.entries(byDate).forEach(([dateLabel, tickets]) => {
+      // Date header row (matching your file: "Date: Monday, May 26, 2026")
+      txRows.push(['Date: ' + dateLabel, '', '', '', '', '', '', '']);
+      // Column headers
+      txRows.push(['Service','Ticket','Arrival Time','Time Served','Time Ended','Wait Time','Service Time','Agent']);
+      // Data rows
+      tickets.forEach(t => {
+        txRows.push([
+          t.service,
+          t.ticketNumber,
+          t.arrivalTime ? formatDateTime(t.arrivalTime) : '',
+          t.timeServed  ? formatDateTime(t.timeServed)  : '',
+          t.timeEnded   ? formatDateTime(t.timeEnded)   : '',
+          t.timeServed  ? formatDuration(t.timeServed - t.arrivalTime) : '',
+          (t.timeServed && t.timeEnded) ? formatDuration(t.timeEnded - t.timeServed) : '',
+          t.agentName || ''
+        ]);
+      });
+      txRows.push(['', '', '', '', '', '', '', '']); // blank row between dates
+    });
+
+    const ws1 = XLSX.utils.aoa_to_sheet(txRows);
+    // Column widths
+    ws1['!cols'] = [{ wch:30 },{ wch:10 },{ wch:20 },{ wch:20 },{ wch:20 },{ wch:12 },{ wch:12 },{ wch:28 }];
+    XLSX.utils.book_append_sheet(wb, ws1, 'All Transactions');
+
+    // ── Sheet 2: Agent Summary ──
+    const agentMap = {};
+    reportData.forEach(t => {
+      const a = t.agentName || 'Unknown';
+      if (!agentMap[a]) agentMap[a] = { served:0, cancelled:0, totalSvc:0, totalWait:0, svcCount:0 };
+      if (t.status === 'done')      agentMap[a].served++;
+      if (t.status === 'cancelled') agentMap[a].cancelled++;
+      if (t.timeServed && t.timeEnded) {
+        agentMap[a].totalSvc  += (t.timeEnded - t.timeServed);
+        agentMap[a].svcCount++;
+      }
+      if (t.timeServed && t.arrivalTime) {
+        agentMap[a].totalWait += (t.timeServed - t.arrivalTime);
+      }
+    });
+
+    const agentRows = [['Agent','Served','Cancelled','Avg Service Time','Avg Wait Time']];
+    Object.entries(agentMap).forEach(([agent, d]) => {
+      agentRows.push([
+        agent, d.served, d.cancelled,
+        d.svcCount  > 0 ? formatDuration(d.totalSvc  / d.svcCount)  : '—',
+        d.served    > 0 ? formatDuration(d.totalWait / d.served)    : '—'
+      ]);
+    });
+    const ws2 = XLSX.utils.aoa_to_sheet(agentRows);
+    ws2['!cols'] = [{ wch:28 },{ wch:10 },{ wch:12 },{ wch:18 },{ wch:16 }];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Agent Summary');
+
+    // ── Sheet 3: Service Summary ──
+    const svcMap = {};
+    reportData.forEach(t => {
+      if (!svcMap[t.service]) svcMap[t.service] = { total:0, served:0, cancelled:0, inProgress:0, totalSvc:0, svcCount:0 };
+      svcMap[t.service].total++;
+      if (t.status === 'done')        svcMap[t.service].served++;
+      if (t.status === 'cancelled')   svcMap[t.service].cancelled++;
+      if (t.status === 'in_progress') svcMap[t.service].inProgress++;
+      if (t.timeServed && t.timeEnded) {
+        svcMap[t.service].totalSvc += (t.timeEnded - t.timeServed);
+        svcMap[t.service].svcCount++;
+      }
+    });
+
+    const svcRows = [['Service','Total','Served','Cancelled','In Progress','Avg Service Time']];
+    SERVICES.forEach(s => {
+      const d = svcMap[s.label];
+      if (!d) return;
+      svcRows.push([
+        s.label, d.total, d.served, d.cancelled, d.inProgress,
+        d.svcCount > 0 ? formatDuration(d.totalSvc / d.svcCount) : '—'
+      ]);
+    });
+    const ws3 = XLSX.utils.aoa_to_sheet(svcRows);
+    ws3['!cols'] = [{ wch:32 },{ wch:8 },{ wch:8 },{ wch:12 },{ wch:14 },{ wch:18 }];
+    XLSX.utils.book_append_sheet(wb, ws3, 'Service Summary');
+
+    // Export
+    const filename = 'CReg_BQMS_Transactions_' + from + (from !== to ? '_to_' + to : '') + '.xlsx';
+    XLSX.writeFile(wb, filename);
+
+  } catch(e) {
+    alert('Export failed: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Export .xlsx';
+  }
+};
+
+// ── ADMIN ────────────────────────────────────────────────────
+async function loadStaffList() {
+  const snap = await get(ref(db,'users'));
+  const list = document.getElementById('staff-list-admin');
+  list.innerHTML = '';
+  if (!snap.exists()) { list.innerHTML = '<p style="color:var(--text3);font-size:13px">No staff accounts found.</p>'; return; }
+  snap.forEach(child => {
+    const d = child.val();
+    const initials = (d.displayName||d.username||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    const el = document.createElement('div');
+    el.className = 'staff-item';
+    el.innerHTML = `
+      <div class="staff-avatar">${initials}</div>
+      <div class="staff-info"><div class="staff-name">${d.displayName||d.username}</div><div class="staff-role">${d.username} · ${d.role}</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="resetPasswordPrompt('${child.key}','${d.displayName||d.username}')">Reset PW</button>`;
+    list.appendChild(el);
+  });
+}
+
+window.addStaffAccount = async function() {
+  const name     = document.getElementById('new-staff-name').value.trim();
+  const username = document.getElementById('new-staff-username').value.trim().toLowerCase();
+  const password = document.getElementById('new-staff-password').value;
+  const role     = document.getElementById('new-staff-role').value;
+  const errEl    = document.getElementById('add-staff-error');
+  errEl.textContent = '';
+  errEl.style.color = 'var(--accent)';
+  if (!name||!username||!password) { errEl.textContent='All fields are required.'; return; }
+  if (password.length < 6) { errEl.textContent='Password must be at least 6 characters.'; return; }
+  const existing = await get(ref(db,`usernames/${username}`));
+  if (existing.exists()) { errEl.textContent='Username already exists.'; return; }
+
+  // Save TL credentials to re-authenticate after creating new account
+  const tlEmail = currentUser.email;
+  const tlPwEl  = document.getElementById('tl-pw-cache');
+  const tlPw    = tlPwEl ? tlPwEl.value : null;
+  if (!tlPw) {
+    errEl.textContent = 'Please enter your TL password in the field above before creating accounts.';
+    return;
+  }
+
+  try {
+    const email = `${username}@bqms.creg.local`;
+    // Use secondary auth instance to avoid signing out TL
+    const { initializeApp: initApp2 } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const { getAuth: getAuth2, createUserWithEmailAndPassword: createUser2 } =
+      await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+    const app2  = initApp2(fbApp.options, 'secondary-' + Date.now());
+    const auth2 = getAuth2(app2);
+    const cred  = await createUser2(auth2, email, password);
+    const uid   = cred.user.uid;
+    await set(ref(db,`users/${uid}`), { username, displayName:name, role, email });
+    await set(ref(db,`usernames/${username}`), email);
+    await cred.user.delete(); // clean up secondary auth session (user still exists in Firebase Auth)
+    errEl.style.color = 'var(--success)';
+    errEl.textContent = 'Account created for ' + name + '.';
+    document.getElementById('new-staff-name').value='';
+    document.getElementById('new-staff-username').value='';
+    document.getElementById('new-staff-password').value='';
+    loadStaffList();
+  } catch(e) {
+    // Fallback: create via REST API workaround — write to pendingAccounts for manual creation
+    try {
+      const email = `${username}@bqms.creg.local`;
+      await set(ref(db,`pendingAccounts/${username}`), {
+        username, displayName:name, role, email, password, requestedBy: currentAgentName, requestedAt: Date.now()
+      });
+      errEl.style.color = 'var(--warning)';
+      errEl.textContent = 'Account queued for ' + name + '. Open Firebase Auth and add: ' + email + ' / ' + password;
+    } catch(e2) { errEl.textContent = 'Error: ' + e.message; }
+  }
+};
+
+window.resetPasswordPrompt = async function(uid, name) {
+  const newPw = prompt('Enter new password for ' + name + ' (min 6 characters):');
+  if (!newPw || newPw.length < 6) { alert('Password must be at least 6 characters.'); return; }
+  try {
+    // Write reset request to Firebase — staff app picks it up on next login
+    await set(ref(db,`passwordResets/${uid}`), {
+      newPassword: newPw, requestedBy: currentAgentName,
+      requestedAt: Date.now(), status: 'pending'
+    });
+    alert('Password reset saved for ' + name + '. New password takes effect on their next login.');
+  } catch(e) { alert('Error: ' + e.message); }
+};
+
+// ── QUEUE RESET ──────────────────────────────────────────────
+window.confirmReset = function() {
+  document.getElementById('confirm-title').textContent = 'Reset Today\'s Queue?';
+  document.getElementById('confirm-msg').textContent = 'This will clear all active tickets and reset counters to 0. Today\'s data will be archived. This cannot be undone.';
+  document.getElementById('confirm-ok-btn').textContent = 'Reset Now';
+  confirmCallback = executeReset;
+  document.getElementById('confirm-modal').classList.add('show');
+};
+
+async function executeReset() {
+  const today = getToday();
+  // Archive today's queue
+  const snap = await get(ref(db,'queue'));
+  if (snap.exists()) {
+    await set(ref(db,`archive/${today}`), snap.val());
+  }
+  // Clear queue
+  await remove(ref(db,'queue'));
+  // Reset counters config
+  await remove(ref(db,`config/counters/${today}`));
+  await set(ref(db,'config/lastReset'), { timestamp:Date.now(), by: currentAgentName });
+  // Reset counter served counts
+  COUNTERS.forEach(async c => {
+    await update(ref(db,`counters/${c.id}`), { served:0, avgService:0, activeTicket:'', activeTicketId:'' });
+  });
+  alert('Queue reset complete. All data has been archived.');
+}
+
+window.closeConfirm = function() { document.getElementById('confirm-modal').classList.remove('show'); confirmCallback=null; };
+window.confirmOk = function() { closeConfirm(); if(confirmCallback) confirmCallback(); };
+
+// ── HELPERS ──────────────────────────────────────────────────
+function getToday() { return new Date().toISOString().split('T')[0].replace(/-/g,''); }
+
+function formatTime(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit', hour12:true });
+}
+
+function formatDateTime(ts) {
+  if (!ts) return '—';
+  // Time-only format matching AQMS: HH:MM:SS (24-hour)
+  return new Date(ts).toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+}
+
+function formatDuration(ms) {
+  if (!ms || ms<0) return '0:00';
+  const totalSec = Math.floor(ms/1000);
+  const mins = Math.floor(totalSec/60);
+  const secs = totalSec % 60;
+  return `${mins}:${String(secs).padStart(2,'0')}`;
+}
+
+function formatSeconds(s) {
+  const m = Math.floor(s/60), sec = s%60;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function playChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine'; o.frequency.value = 880;
+    g.gain.setValueAtTime(0.4, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.6);
+  } catch(e) {}
+}
+
+function clearListeners() {
+  queueListeners.forEach(({ ref:r, listener:l }) => off(r, 'value', l));
+  queueListeners = [];
+}
+
+// ── BOOTSTRAP: Create initial staff accounts if none exist ──
+async function bootstrapIfNeeded() {
+  const snap = await get(ref(db,'config/bootstrapped'));
+  if (snap.exists()) return;
+
+  const initialStaff = [
+    { username:'ncaringal',   displayName:'Nadine Caringal',        role:'tl'      },
+    { username:'issuer',      displayName:'Queue Issuer',           role:'issuer'  },
+    { username:'cashier',     displayName:'Cashier',                role:'cashier' },
+    { username:'cregmt',      displayName:'cregmt',                 role:'medtech' },
+    { username:'gpasay',      displayName:'Gladize Grace Pasay',    role:'pss'     },
+    { username:'ipahila',     displayName:'Ian Timothy Pahila',     role:'pss'     },
+    { username:'aanzures',    displayName:'Alleli Anzures',         role:'pss'     },
+    { username:'jtaguiam',    displayName:'John Adrian Taguiam',    role:'pss'     },
+    { username:'masolis',     displayName:'Mary Aileen Solis',      role:'pss'     },
+    { username:'mbasilio',    displayName:'Moira Basilio',          role:'pss'     },
+    { username:'lncalica',    displayName:'Legenn Nezer Calica',    role:'pss'     },
+    { username:'hcvillareal', displayName:'Hans Christian Villareal', role:'pss'  },
+    { username:'jamancil',    displayName:'Julie Ann Mancil',       role:'cashier' },
+    { username:'gespedillon', displayName:'Gracely Espedillon',     role:'cashier' },
+  ];
+
+  // We can only create accounts once we have TL signed in — skip bootstrap here
+  // TL must create accounts from Admin panel using the Add Staff function
+  // Just mark as bootstrapped and show a first-run message
+  await set(ref(db,'config/bootstrapped'), true);
+}
+
+// ── SPEECH SYNTHESIS ──────────────────────────────────────
+// ── SHARED VOICE FUNCTIONS ──────────────────────────────
+var _cachedVoice = null;
+
+function getPreferredVoice() {
+  if (_cachedVoice) return _cachedVoice;
+  var voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  var v = voices.find(function(v){ return v.name === 'Google US English'; })
+    || voices.find(function(v){ return v.name === 'Samantha'; })
+    || voices.find(function(v){ return v.lang === 'en-US' && !v.localService; })
+    || voices.find(function(v){ return v.lang === 'en-US'; })
+    || voices.find(function(v){ return v.lang.startsWith('en-'); })
+    || voices[0];
+  _cachedVoice = v;
+  return v;
+}
+
+function preloadVoices() {
+  if (window.speechSynthesis) {
+    var voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) { _cachedVoice = null; getPreferredVoice(); }
+    else { window.speechSynthesis.onvoiceschanged = function() { _cachedVoice = null; getPreferredVoice(); }; }
+  }
+}
+
+var _audioCtx = null;
+
+function getAudioCtx() {
+  if (!_audioCtx || _audioCtx.state === 'closed') {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    _audioCtx = new AC();
+  }
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+// 4-tone ascending chime: C5 → E5 → G5 → C6
+// Clean rising steps, professional PA system feel
+function playBellTone(ctx, freq, t, dur, vol) {
+  vol = vol || 0.38;
+  var mg = ctx.createGain();
+  mg.connect(ctx.destination);
+  [[1, 1.0], [2, 0.15], [3, 0.05]].forEach(function(h) {
+    var o = ctx.createOscillator();
+    var g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq * h[0];
+    g.gain.value = h[1];
+    o.connect(g); g.connect(mg);
+    o.start(t); o.stop(t + dur);
+  });
+  mg.gain.setValueAtTime(0, t);
+  mg.gain.linearRampToValueAtTime(vol, t + 0.012);
+  mg.gain.setValueAtTime(vol, t + 0.08);
+  mg.gain.exponentialRampToValueAtTime(0.001, t + dur);
+}
+
+function playDingChime(onComplete) {
+  var ctx = getAudioCtx();
+  if (!ctx) { onComplete(); return; }
+  try {
+    var n = ctx.currentTime;
+    var gap = 0.42;
+    playBellTone(ctx, 523.25, n + 0.05,       0.7);   // C5
+    playBellTone(ctx, 659.25, n + 0.05 + gap, 0.7);   // E5
+    playBellTone(ctx, 783.99, n + 0.05 + gap*2, 0.7); // G5
+    playBellTone(ctx, 1046.5, n + 0.05 + gap*3, 1.1); // C6
+    // Total ~2.4s before voice
+    setTimeout(onComplete, 2400);
+  } catch(e) {
+    console.warn('Chime error:', e);
+    onComplete();
+  }
+}
+
+// ── Announcement queue — prevents mid-sentence cancellation ──
+var _announceQueue = [];
+var _announcing = false;
+
+function processAnnounceQueue() {
+  if (_announcing || _announceQueue.length === 0) return;
+  _announcing = true;
+  var item = _announceQueue.shift();
+  if (item.chime) {
+    playDingChime(function() { doSpeakText(item.text); });
+  } else {
+    doSpeakText(item.text);
+  }
+}
+
+function doSpeakText(text) {
+  if (!window.speechSynthesis) { _announcing = false; processAnnounceQueue(); return; }
+  if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+  function speak() {
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.0; u.volume = 1.0;
+    var preferred = getPreferredVoice();
+    if (preferred) u.voice = preferred;
+    u.onend = function() { _announcing = false; processAnnounceQueue(); };
+    u.onerror = function(e) { console.warn('TTS error:', e.error); _announcing = false; processAnnounceQueue(); };
+    window.speechSynthesis.speak(u);
+  }
+  var voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) { speak(); }
+  else { window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.onvoiceschanged=null; speak(); }; }
+}
+
+// Main announcement: chime then voice — queued, never cancels mid-sentence
+function speakAnnouncement(text) {
+  _announceQueue.push({ text: text, chime: true });
+  processAnnounceQueue();
+}
+
+// Re-announce: voice only, no chime — queued
+function speakReAnnounce(text) {
+  // Re-announce clears queue and speaks immediately (user tapped)
+  _announceQueue = [];
+  _announcing = false;
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  doSpeakText(text);
+}
+
+// ── ANNOUNCER v2 ───────────────────────────────────────────
+var announcerLastTicketId = null;
+var announcerHistory = [];
+
+function initAnnouncer() {
+  requestWakeLock();
+  preloadVoices();
+  setTimeout(function() {
+    var overlay = document.getElementById('ann-activate-overlay');
+    if (overlay) overlay.setAttribute('style', 'display:flex!important;position:absolute;inset:0;z-index:999;background:rgba(10,31,60,.97);align-items:center;justify-content:center;');
+  }, 200);
+  setInterval(function() {
+    var el = document.getElementById('ann2-clock');
+    if (el) el.textContent = new Date().toLocaleString('en-PH', { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:true });
+  }, 1000);
+}
+
+window.activateAnnouncer = function() {
+  var overlay = document.getElementById('ann-activate-overlay');
+  if (overlay) overlay.setAttribute('style', 'display:none!important;');
+  // Initialize AudioContext and preload voices on user gesture
+  getAudioCtx();
+  preloadVoices();
+  listenAnnouncerQueue();
+  listenAnnouncerCounters();
+  // Short delay then activation chime + voice
+  setTimeout(function() { speakAnnouncement('Announcer is now active.'); }, 500);
+};
+
+function listenAnnouncerQueue() {
+  var qRef = ref(db, 'queue');
+  var listener = onValue(qRef, function(snap) {
+    if (!snap.exists()) { renderAnn2Extraction([], [], null); return; }
+    var inProgress = [], extPr = [], extReg = [], extCurrent = null;
+    snap.forEach(function(child) {
+      var d = child.val();
+      if (d.status === 'in_progress' && d.timeServed && d.counterName) inProgress.push(Object.assign({ id:child.key }, d));
+      if (['I','J'].includes(d.prefix)) {
+        if (d.status === 'in_progress') extCurrent = Object.assign({ id:child.key }, d);
+        else if (d.status === 'waiting') { if (d.prefix==='I') extPr.push(Object.assign({ id:child.key }, d)); else extReg.push(Object.assign({ id:child.key }, d)); }
+      }
+    });
+    inProgress.sort(function(a,b){ return b.timeServed-a.timeServed; });
+    extPr.sort(function(a,b){ return a.arrivalTime-b.arrivalTime; });
+    extReg.sort(function(a,b){ return a.arrivalTime-b.arrivalTime; });
+    // Update NOW SERVING display
+    if (inProgress.length > 0) {
+      // Show latest called ticket
+      if (inProgress[0].id !== announcerLastTicketId) {
+        announcerLastTicketId = inProgress[0].id;
+        displayAndAnnounce(inProgress[0]);
+      }
+    } else {
+      // No active tickets — clear the NOW SERVING display
+      announcerLastTicketId = null;
+      clearAnnouncerDisplay();
+    }
+    renderAnn2Extraction(extPr, extReg, extCurrent);
+  }, { onlyOnce: false });
+  queueListeners.push({ ref:qRef, listener:listener });
+}
+
+function listenAnnouncerCounters() {
+  var cRef = ref(db, 'counters');
+  var listener = onValue(cRef, function(snap) { renderAnn2Counters(snap.val() || {}); }, { onlyOnce: false });
+  queueListeners.push({ ref:cRef, listener:listener });
+}
+
+function renderAnn2Counters(counters) {
+  var grid = document.getElementById('ann2-ctr-grid');
+  if (!grid) return;
+  var ROLES = { counter1:'Cashier', counter2:'Registration', counter3:'Registration', counter4:'Registration', counter5:'Registration', counter6:'Registration' };
+  var html = '';
+  COUNTERS.filter(function(c){ return c.id !== 'extraction'; }).forEach(function(c) {
+    var d = counters[c.id] || {};
+    var isActive = d.status==='active' && d.agentName, isBreak = d.status==='break';
+    var cls = isActive ? 'on' : isBreak ? 'break' : 'offline';
+    var dot = isActive ? 'g' : isBreak ? 'y' : 'x';
+    var rightHtml;
+    if (isActive && d.activeTicket) {
+      var svcLabel = d.activeService || '';
+      rightHtml = '<div class="ann2-ctr-right">'
+        + '<div class="ann2-ctr-ticket">' + d.activeTicket + '</div>'
+        + (svcLabel ? '<div class="ann2-ctr-service">' + svcLabel + '</div>' : '')
+        + '</div>';
+    } else if (isBreak) {
+      rightHtml = '<div class="ann2-ctr-right"><div class="ann2-ctr-idle">On break</div></div>';
+    } else {
+      rightHtml = '<div class="ann2-ctr-right"><div class="ann2-ctr-idle">Offline</div></div>';
+    }
+    html += '<div class="ann2-ctr-item ' + cls + '">'
+      + '<div class="ann2-ctr-left"><div class="ann2-dot ' + dot + '"></div>'
+      + '<div class="ann2-ctr-info">'
+      + '<div class="ann2-ctr-label">' + c.label + '</div>'
+      + '<div class="ann2-ctr-role">' + (ROLES[c.id]||'') + '</div>'
+      + '</div></div>'
+      + rightHtml + '</div>';
+  });
+  grid.innerHTML = html;
+}
+
+function renderAnn2Extraction(prList, regList, current) {
+  var tEl = document.getElementById('ann2-ext-ticket'), sEl = document.getElementById('ann2-ext-svc');
+  var prEl = document.getElementById('ann2-ext-pr-list'), regEl = document.getElementById('ann2-ext-reg-list');
+  if (!tEl) return;
+  tEl.textContent = current ? current.ticketNumber : '—';
+  sEl.textContent = current ? 'Blood Extraction (' + (current.prefix==='I'?'Priority':'Regular') + ')' : '';
+  prEl.innerHTML  = prList.length  ? prList.map(function(t,i){ return '<div class="ann2-ext-item pr"><span class="ann2-ext-num">'+t.ticketNumber+'</span><span class="ann2-ext-pos">'+(i+1)+'st</span></div>'; }).join('') : '<div class="ann2-ext-empty">None</div>';
+  regEl.innerHTML = regList.length ? regList.map(function(t,i){ return '<div class="ann2-ext-item reg"><span class="ann2-ext-num">'+t.ticketNumber+'</span><span class="ann2-ext-pos">'+(i+1)+'st</span></div>'; }).join('') : '<div class="ann2-ext-empty">None</div>';
+}
+
+function displayAndAnnounce(ticket) {
+  var tEl = document.getElementById('ann-ticket'), cEl = document.getElementById('ann-counter');
+  var sEl = document.getElementById('ann-service'), lEl = document.getElementById('ann-now-label');
+  if (!tEl) return;
+  var ROLES = { 'Counter 1':'Counter 1 &mdash; Cashier', 'Counter 2':'Counter 2 &mdash; Registration', 'Counter 3':'Counter 3 &mdash; Registration', 'Counter 4':'Counter 4 &mdash; Registration', 'Counter 5':'Counter 5 &mdash; Registration', 'Counter 6':'Counter 6 &mdash; Registration', 'Extraction':'Blood Extraction' };
+  tEl.textContent = ticket.ticketNumber;
+  cEl.innerHTML   = ROLES[ticket.counterName] || ticket.counterName;
+  sEl.textContent = ticket.service;
+  lEl.textContent = 'NOW SERVING';
+  tEl.classList.remove('flash'); void tEl.offsetWidth; tEl.classList.add('flash');
+  announcerHistory.unshift({ num: ticket.ticketNumber, counter: ticket.counterName });
+  if (announcerHistory.length > 8) announcerHistory.pop();
+  renderAnn2History();
+  renderAnn2RecentBar();
+  speakAnnouncement('Now serving ticket ' + ticket.ticketNumber.split('').join(' ') + ' at ' + ticket.counterName);
+}
+
+function clearAnnouncerDisplay() {
+  var tEl = document.getElementById('ann-ticket');
+  var cEl = document.getElementById('ann-counter');
+  var sEl = document.getElementById('ann-service');
+  var lEl = document.getElementById('ann-now-label');
+  if (!tEl) return;
+  tEl.textContent = '—';
+  cEl.textContent = '';
+  sEl.textContent = '';
+  lEl.textContent = 'WAITING FOR NEXT TICKET';
+  tEl.classList.remove('flash');
+}
+
+function renderAnn2History() {
+  var el = document.getElementById('ann2-history');
+  if (!el) return;
+  el.innerHTML = announcerHistory.map(function(h,i) {
+    return '<div class="ann2-hist-item" style="opacity:' + Math.max(0.3, 1-i*0.1) + '">'
+      + '<div class="ann2-hist-num">' + h.num + '</div>'
+      + '<div class="ann2-hist-ctr">' + h.counter + '</div></div>';
+  }).join('');
+}
+
+function renderAnn2RecentBar() {
+  var el = document.getElementById('ann2-recent-bar');
+  if (!el) return;
+  if (announcerHistory.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = announcerHistory.slice(1).map(function(h) {
+    return '<div class="ann2-r-chip">' + h.num + '</div>';
+  }).join('');
+}
+
+bootstrapIfNeeded();
+
+// ── MIDNIGHT AUTO-RESET ─────────────────────────────────────
+async function checkMidnightReset() {
+  const today = getToday();
+  const resetSnap = await get(ref(db, 'config/lastReset'));
+  const lastReset = resetSnap.exists() ? resetSnap.val() : null;
+  const lastResetDate = lastReset && lastReset.timestamp
+    ? new Date(lastReset.timestamp).toISOString().split('T')[0].replace(/-/g,'')
+    : null;
+
+  // If last reset was not today, trigger auto-reset immediately
+  if (lastResetDate !== today) {
+    await executeAutoReset();
+  }
+
+  // Schedule check at next midnight
+  scheduleNextMidnightReset();
+}
+
+function scheduleNextMidnightReset() {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 30, 0); // 12:00:30 AM next day
+  const msUntilMidnight = midnight - now;
+  setTimeout(async () => {
+    await executeAutoReset();
+    scheduleNextMidnightReset(); // reschedule for next day
+  }, msUntilMidnight);
+}
+
+async function executeAutoReset() {
+  const today = getToday();
+  try {
+    // Archive today's queue data
+    const snap = await get(ref(db, 'queue'));
+    if (snap.exists()) {
+      await set(ref(db, `archive/${today}`), snap.val());
+    }
+    // Clear active queue
+    await remove(ref(db, 'queue'));
+    // Reset ticket counters
+    await remove(ref(db, `config/counters/${today}`));
+    // Log the reset
+    await set(ref(db, 'config/lastReset'), {
+      timestamp: Date.now(), by: 'auto-midnight', date: today
+    });
+    // Reset counter stats
+    for (const c of COUNTERS) {
+      await update(ref(db, `counters/${c.id}`), {
+        served: 0, avgService: 0, activeTicket: '', activeTicketId: ''
+      });
+    }
+    console.log('Auto midnight reset completed for', today);
+  } catch(e) {
+    console.error('Auto reset failed:', e.message);
+  }
+}
+
+// ── PATIENT ALERT (QR mode only) ──────────────────────────
+var _patientAlertListener = null;
+var _patientAlertShown = false;
+
+function startPatientAlertListener() {
+  if (!_isKioskMode) return;
+  // Detach previous listener before starting a new one
+  if (_patientAlertListener) {
+    try { _patientAlertListener(); } catch(e) {}
+    _patientAlertListener = null;
+  }
+  _patientAlertShown = false;
+  try {
+    var saved = JSON.parse(localStorage.getItem('bqms_my_ticket') || 'null');
+    if (!saved || !saved.num) return;
+    var myTicket = saved.num;
+    var myPrefix = myTicket.charAt(0);
+
+    // Listen to queue for changes
+    var qRef = ref(db, 'queue');
+    _patientAlertListener = onValue(qRef, function(snap) {
+      if (!snap.exists()) return;
+      var myStatus = null, myCounter = '';
+
+      snap.forEach(function(child) {
+        var d = child.val();
+        if (d.ticketNumber === myTicket) {
+          myStatus = d.status;
+          myCounter = d.counterName || '';
+        }
+      });
+
+      if (myStatus === 'in_progress' && !_patientAlertShown) {
+        // Ticket is being called right now — only reliable trigger
+        _patientAlertShown = true;
+        showPatientAlert('now', myTicket, myCounter);
+      } else if (myStatus === 'done' || myStatus === 'cancelled') {
+        // Ticket served or cancelled — clear from memory so patient can get a new one
+        _patientAlertShown = false;
+        try { localStorage.removeItem('bqms_my_ticket'); } catch(e) {}
+        if (_patientAlertListener) {
+          try { _patientAlertListener(); } catch(e) {}
+          _patientAlertListener = null;
+        }
+        // Refresh idle screen to remove recall banner
+        var banner = document.getElementById('ki-recall-banner');
+        if (banner) banner.style.display = 'none';
+      } else if (!myStatus) {
+        // Ticket not found in queue (archived after reset) — clear
+        _patientAlertShown = false;
+        try { localStorage.removeItem('bqms_my_ticket'); } catch(e) {}
+        var banner2 = document.getElementById('ki-recall-banner');
+        if (banner2) banner2.style.display = 'none';
+      }
+    });
+  } catch(e) { console.warn('Patient alert error:', e); }
+}
+
+function showPatientAlert(type, ticketNum, counterName) {
+  var el = document.getElementById('patient-alert');
+  if (!el) return;
+
+  // Vibrate phone if supported
+  if (navigator.vibrate) {
+    if (type === 'now') navigator.vibrate([300, 100, 300, 100, 300]);
+    else navigator.vibrate([200, 100, 200]);
+  }
+
+  // Play alert sound
+  try {
+    var ac = getAudioCtx();
+    if (ac) {
+      if (type === 'now') {
+        // Celebratory ascending ding
+        playBellTone(ac, 523.25, ac.currentTime + 0.05, 0.6, 0.4);
+        playBellTone(ac, 659.25, ac.currentTime + 0.47, 0.6, 0.4);
+        playBellTone(ac, 783.99, ac.currentTime + 0.89, 0.6, 0.4);
+        playBellTone(ac, 1046.5, ac.currentTime + 1.31, 1.0, 0.4);
+      } else {
+        // Two gentle pings
+        playBellTone(ac, 659.25, ac.currentTime + 0.05, 0.7, 0.3);
+        playBellTone(ac, 659.25, ac.currentTime + 0.55, 0.9, 0.3);
+      }
+    }
+  } catch(e) {}
+
+  el.className = '';
+  el.classList.add(type);
+  document.getElementById('pa-icon').textContent   = type === 'now' ? '🔔' : '⏰';
+  document.getElementById('pa-ticket').textContent = ticketNum;
+  document.getElementById('pa-title').textContent  = type === 'now' ? 'Your number is being called!' : 'Get ready — you are next!';
+  document.getElementById('pa-msg').textContent    = type === 'now'
+    ? 'Please proceed to the counter now.'
+    : 'One person ahead of you. Please return to the waiting area.';
+  document.getElementById('pa-counter').textContent = counterName ? 'Please go to ' + counterName : '';
+  el.style.display = 'flex';
+}
+
+window.dismissPatientAlert = function() {
+  var el = document.getElementById('patient-alert');
+  if (el) el.style.display = 'none';
+};
+
+// Start listening after kiosk login
+function initIssuerAlerts() {
+  if (_isKioskMode) {
+    setTimeout(startPatientAlertListener, 1500);
+  }
+}
+
+// ── TL ACT AS PSS ────────────────────────────────────────────
+var _tlSelectedCounter = null;
+
+window.tlActAsPSS = function() {
+  _tlSelectedCounter = null;
+  var grid = document.getElementById('tl-pss-counter-grid');
+  var confirmBtn = document.getElementById('tl-pss-confirm-btn');
+  confirmBtn.disabled = true;
+  confirmBtn.style.opacity = '.5';
+  grid.innerHTML = '';
+
+  var available = COUNTERS.filter(function(c) { return c.id !== 'extraction'; });
+  available.forEach(function(c) {
+    var btn = document.createElement('div');
+    btn.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;border:1.5px solid #E2E8F0;cursor:pointer;transition:all .15s;background:#F8FAFC;';
+    btn.innerHTML = '<div><div style="font-size:14px;font-weight:700;color:#1E3A5F;">' + c.label + '</div>'
+      + '<div style="font-size:12px;color:#94A3B8;">' + (c.role === 'cashier' ? 'Cashier' : 'Registration') + '</div></div>'
+      + '<div style="width:20px;height:20px;border-radius:50%;border:2px solid #CBD5E1;" id="tl-pss-dot-' + c.id + '"></div>';
+    btn.onclick = function() {
+      grid.querySelectorAll('[id^=tl-pss-dot]').forEach(function(d) {
+        d.style.background = '';
+        d.style.borderColor = '#CBD5E1';
+        d.parentElement.style.borderColor = '#E2E8F0';
+        d.parentElement.style.background = '#F8FAFC';
+      });
+      var dot = document.getElementById('tl-pss-dot-' + c.id);
+      dot.style.background = '#1B4F8A';
+      dot.style.borderColor = '#1B4F8A';
+      btn.style.borderColor = '#1B4F8A';
+      btn.style.background = '#EFF6FF';
+      _tlSelectedCounter = c.id;
+      confirmBtn.disabled = false;
+      confirmBtn.style.opacity = '1';
+    };
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('tl-pss-modal').style.display = 'flex';
+};
+
+window.tlPSSConfirm = async function() {
+  if (!_tlSelectedCounter) return;
+  document.getElementById('tl-pss-modal').style.display = 'none';
+
+  // Set counter and switch to PSS screen
+  currentCounter = _tlSelectedCounter;
+  currentRole = 'pss';
+
+  // Register presence at counter
+  try {
+    await update(ref(db, 'counters/' + currentCounter), {
+      agentName: currentAgentName,
+      agentId: currentUser.uid,
+      status: 'active',
+      activeTicket: '',
+      activeTicketId: ''
+    });
+  } catch(e) { console.warn('Counter register error:', e); }
+
+  // Add "Back to TL" button by storing flag
+  window._tlActingAsPSS = true;
+  showScreen('pss');
+  initPSS();
+};
+
+// Enter key on login
+document.getElementById('login-username').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-password').focus(); });
+</script>
+  <!-- TL Act as PSS — Counter Picker Modal -->
+  <div id="tl-pss-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(15,47,86,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px;">
+    <div style="background:white;border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+      <div style="font-size:18px;font-weight:700;color:#1E3A5F;margin-bottom:4px;">Act as PSS</div>
+      <div style="font-size:13px;color:#64748B;margin-bottom:20px;">Select a counter to serve patients. You can return to TL dashboard anytime.</div>
+      <div id="tl-pss-counter-grid" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="tlPSSConfirm()" id="tl-pss-confirm-btn" disabled
+          style="flex:1;background:#1B4F8A;color:white;border:none;padding:13px;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;opacity:.5;">
+          Go to Counter
+        </button>
+        <button onclick="document.getElementById('tl-pss-modal').style.display='none'"
+          style="flex:1;background:white;border:1.5px solid #E2E8F0;padding:13px;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;color:#475569;cursor:pointer;">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patient alert overlay — shown when number is next or being called -->
+  <div id="patient-alert">
+    <div class="pa-icon" id="pa-icon"></div>
+    <div class="pa-title" id="pa-title"></div>
+    <div class="pa-ticket" id="pa-ticket"></div>
+    <div class="pa-counter" id="pa-counter"></div>
+    <div class="pa-msg" id="pa-msg"></div>
+    <button class="pa-dismiss" onclick="dismissPatientAlert()">OK, I'm on my way</button>
+  </div>
+
+</body>
+</html>
