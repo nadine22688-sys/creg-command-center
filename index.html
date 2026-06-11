@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CREG — Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+[data-theme="dark"] {
+  --bg:#0d1b2e;--surface:#0a1628;--card:#112244;--card-h:#163060;
+  --border:rgba(37,99,235,0.2);--border-h:rgba(37,99,235,0.4);
+  --text:#f0f4ff;--text-sec:#a8bcdc;--muted:#5a7aaa;
+  --hdr-bg:rgba(10,22,40,0.95);--stat-bg:#112244;
+  --foot-bg:rgba(8,16,28,0.8);--toggle-bg:#0f2040;--toggle-bd:rgba(37,99,235,0.25);
+  --shadow:0 20px 60px rgba(0,0,0,0.5);
+  --grid-ln:rgba(37,99,235,0.04);--mesh1:rgba(37,99,235,0.07);--mesh2:rgba(6,182,212,0.05);
+  --uc-bg:#0f1e10;--uc-bd:rgba(202,138,4,0.25);--uc-text:#8a8070;--uc-sub:#5a6840;
+}
+[data-theme="light"] {
+  --bg:#f0f4fb;--surface:#ffffff;--card:#ffffff;--card-h:#f5f8ff;
+  --border:rgba(30,64,175,0.13);--border-h:rgba(30,64,175,0.35);
+  --text:#1e293b;--text-sec:#475569;--muted:#94a3b8;
+  --hdr-bg:rgba(240,244,251,0.95);--stat-bg:#ffffff;
+  --foot-bg:rgba(220,228,248,0.7);--toggle-bg:#e8eef8;--toggle-bd:rgba(30,64,175,0.2);
+  --shadow:0 12px 40px rgba(30,64,175,0.1);
+  --grid-ln:rgba(30,64,175,0.03);--mesh1:rgba(30,64,175,0.05);--mesh2:rgba(13,148,136,0.04);
+  --uc-bg:#fefce8;--uc-bd:#fde68a;--uc-text:#92400e;--uc-sub:#a16207;
+}
+:root{--a1:#2563eb;--a2:#0d9488;--a3:#d97706;--a4:#7c3aed;--a5:#e11d48;--a6:#0ea5e9;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans','Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;transition:background 0.3s,color 0.3s;-webkit-font-smoothing:antialiased;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 40% at 15% 10%,var(--mesh1) 0%,transparent 60%),radial-gradient(ellipse 60% 35% at 85% 85%,var(--mesh2) 0%,transparent 60%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--grid-ln) 1px,transparent 1px),linear-gradient(90deg,var(--grid-ln) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--hdr-bg);backdrop-filter:blur(16px);flex-wrap:wrap;gap:10px;transition:background 0.3s;}
+.logo-area{display:flex;align-items:center;gap:13px;}
+.logo-badge{width:44px;height:44px;border-radius:11px;background:var(--a1);display:flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:15px;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(37,99,235,0.35);}
+.logo-text h1{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;color:var(--text);letter-spacing:-0.5px;line-height:1;text-shadow:0 0 30px rgba(37,99,235,0.3);}
+.logo-text span{font-size:11px;color:var(--text-sec);font-weight:500;letter-spacing:0.4px;margin-top:3px;display:block;}
+.logo-text span strong{font-weight:600;color:var(--text);}
+.header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--a2);font-weight:600;letter-spacing:0.8px;text-transform:uppercase;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--a2);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(13,148,136,0.5);}50%{box-shadow:0 0 0 5px rgba(13,148,136,0);}}
+#clock{font-size:12px;color:var(--text-sec);font-family:'Courier New',monospace;letter-spacing:0.5px;font-weight:600;}
+.theme-toggle{display:flex;background:var(--toggle-bg);border:1px solid var(--toggle-bd);border-radius:8px;overflow:hidden;flex-shrink:0;}
+.theme-btn{padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);display:flex;align-items:center;gap:5px;transition:background 0.2s,color 0.2s;}
+.theme-btn.active{background:var(--a1);color:#fff;}
+.theme-btn svg{width:12px;height:12px;}
+
+/* SEARCH BAR */
+.search-wrap{position:relative;flex:1;min-width:160px;max-width:280px;}
+.search-input{width:100%;padding:7px 12px 7px 34px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Plus Jakarta Sans','Inter','Segoe UI',system-ui,sans-serif;font-size:12px;outline:none;transition:border-color 0.2s;}
+.search-input:focus{border-color:var(--a1);}
+.search-input::placeholder{color:var(--muted);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+.search-icon svg{width:14px;height:14px;}
+
+/* MAIN */
+main{position:relative;z-index:1;padding:22px 24px 48px;max-width:1400px;margin:0 auto;}
+
+/* SECTION LABEL */
+.section-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-sec);margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* STAT BAR */
+.stat-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:24px;animation:fadeUp 0.4s ease both;}
+.stat-card{background:var(--stat-bg);border:1px solid var(--border);border-radius:10px;padding:13px 15px;position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s,background 0.3s;}
+[data-theme="dark"] .stat-card{border-left:3px solid;}
+[data-theme="light"] .stat-card{border-left:3px solid;}
+.stat-card:nth-child(1){border-left-color:var(--a1)!important;}
+.stat-card:nth-child(2){border-left-color:var(--a2)!important;}
+.stat-card:nth-child(3){border-left-color:var(--a3)!important;}
+.stat-card:nth-child(4){border-left-color:var(--a4)!important;}
+.stat-card:nth-child(5){border-left-color:#16a34a!important;}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--border-h);}
+.stat-label{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.stat-value{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;line-height:1;color:var(--text);letter-spacing:-0.3px;}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+
+/* RECENTLY OPENED */
+.recent-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center;}
+.recent-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.recent-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text-sec);cursor:pointer;text-decoration:none;transition:all 0.2s;}
+.recent-chip:hover{border-color:var(--border-h);color:var(--text);background:var(--card-h);}
+.recent-chip svg{width:12px;height:12px;flex-shrink:0;}
+.recent-time{font-size:10px;color:var(--muted);}
+
+/* QUICK ROW */
+
+
+/* MODULE GRID */
+.module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+
+/* MODULE CARD */
+.module-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;text-decoration:none;transition:transform 0.25s ease,box-shadow 0.25s ease,border-color 0.25s ease,background 0.3s;animation:fadeUp 0.5s ease both;position:relative;}
+.module-card:nth-child(1){animation-delay:.04s}
+.module-card:nth-child(2){animation-delay:.08s}
+.module-card:nth-child(3){animation-delay:.12s}
+.module-card:nth-child(4){animation-delay:.16s}
+.module-card:nth-child(5){animation-delay:.20s}
+.module-card:nth-child(6){animation-delay:.24s}
+.module-card:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:var(--border-h);}
+.module-card:hover .card-arrow{transform:translateX(4px);opacity:1;}
+.module-card:hover .launch-label{color:var(--a1);}
+.card-top-bar{height:3px;width:100%;}
+.c1 .card-top-bar{background:var(--a1);}
+.c2 .card-top-bar{background:var(--a2);}
+.c3 .card-top-bar{background:var(--a3);}
+.c4 .card-top-bar{background:var(--a4);}
+.c5 .card-top-bar{background:var(--a5);}
+.c6 .card-top-bar{background:repeating-linear-gradient(45deg,#ca8a04 0,#ca8a04 8px,transparent 8px,transparent 16px);}
+.card-body{padding:16px 18px;flex:1;display:flex;flex-direction:column;}
+.card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.card-icon{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.c1 .card-icon{background:rgba(37,99,235,0.13);color:var(--a1);}
+.c2 .card-icon{background:rgba(13,148,136,0.11);color:var(--a2);}
+.c3 .card-icon{background:rgba(215,119,6,0.11);color:var(--a3);}
+.c4 .card-icon{background:rgba(124,58,237,0.11);color:var(--a4);}
+.c5 .card-icon{background:rgba(225,29,72,0.11);color:var(--a5);}
+.c6 .card-icon{background:rgba(202,138,4,0.1);color:#ca8a04;}
+.card-icon svg{width:20px;height:20px;}
+.card-arrow{color:var(--muted);opacity:0.4;transition:transform 0.2s,opacity 0.2s;margin-top:3px;}
+.card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;color:var(--text);margin-bottom:5px;line-height:1.2;letter-spacing:-0.2px;}
+.card-desc{font-size:11px;color:var(--text-sec);line-height:1.6;margin-bottom:12px;flex:1;font-weight:400;}
+.card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;}
+.tag{font-size:9px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;padding:2px 7px;border-radius:3px;border:1px solid;}
+.c1 .tag{color:var(--a1);border-color:rgba(37,99,235,0.28);background:rgba(37,99,235,0.07);}
+.c2 .tag{color:var(--a2);border-color:rgba(13,148,136,0.28);background:rgba(13,148,136,0.07);}
+.c3 .tag{color:var(--a3);border-color:rgba(215,119,6,0.28);background:rgba(215,119,6,0.07);}
+.c4 .tag{color:var(--a4);border-color:rgba(124,58,237,0.28);background:rgba(124,58,237,0.07);}
+.c5 .tag{color:var(--a5);border-color:rgba(225,29,72,0.28);background:rgba(225,29,72,0.07);}
+.c6 .tag{color:#ca8a04;border-color:rgba(202,138,4,0.28);background:rgba(202,138,4,0.07);}
+.card-footer{display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:1px solid var(--border);}
+.card-status{display:flex;align-items:center;gap:5px;}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--a2);}
+.launch-label{font-size:10px;color:var(--text-sec);font-weight:500;transition:color 0.2s;}
+.card-version{font-size:9px;color:var(--muted);font-family:monospace;}
+
+/* LAST UPDATED */
+.card-updated{font-size:9px;color:var(--muted);display:flex;align-items:center;gap:3px;margin-top:4px;}
+.card-updated svg{width:9px;height:9px;}
+
+/* MINI STATS STRIP */
+.mini-stat-strip{display:flex;gap:0;border-top:1px solid var(--border);margin-top:10px;}
+.mini-stat{flex:1;padding:7px 10px;text-align:center;border-right:1px solid var(--border);}
+.mini-stat:last-child{border-right:none;}
+.mini-stat-val{font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);line-height:1;}
+.mini-stat-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
+
+/* NOTIFICATION BADGE */
+.notif-badge{position:absolute;top:12px;right:12px;min-width:18px;height:18px;border-radius:9px;background:var(--a5);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;animation:badgePop 0.3s ease;}
+@keyframes badgePop{from{transform:scale(0);}to{transform:scale(1);}}
+
+/* UNDER CONSTRUCTION */
+.uc-card{background:var(--uc-bg)!important;border-color:var(--uc-bd)!important;opacity:0.82;pointer-events:none;cursor:default!important;}
+.uc-card:hover{transform:none!important;box-shadow:none!important;}
+.uc-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+
+/* BACK TO HUB BUTTON (injected into child pages via localStorage flag) */
+.back-hub-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:var(--a1);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;}
+
+/* PASSWORD MODAL */
+.pw-overlay{position:fixed;inset:0;background:rgba(5,10,20,0.88);backdrop-filter:blur(10px);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s ease;}
+.pw-overlay.active{opacity:1;pointer-events:all;}
+.pw-box{background:var(--card);border:1px solid var(--border-h);border-radius:16px;padding:28px 32px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 60px rgba(0,0,0,0.4);animation:fadeUp 0.25s ease;}
+.pw-lock-icon{width:48px;height:48px;border-radius:12px;background:rgba(124,58,237,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto;}
+.pw-lock-icon svg{width:24px;height:24px;color:var(--a4);}
+.pw-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;color:var(--text);text-align:center;}
+.pw-sub{font-size:12px;color:var(--muted);text-align:center;margin-top:-6px;}
+.pw-attempts{font-size:11px;color:var(--a3);text-align:center;min-height:16px;}
+.pw-input{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Plus Jakarta Sans','Inter','Segoe UI',system-ui,sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;letter-spacing:2px;}
+.pw-input:focus{border-color:var(--a4);}
+.pw-input.error{border-color:var(--a5);animation:shake 0.3s ease;}
+.pw-btn{width:100%;padding:11px;background:var(--a4);border:none;border-radius:8px;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:opacity 0.2s;}
+.pw-btn:hover{opacity:0.88;}
+.pw-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.pw-cancel{text-align:center;font-size:12px;color:var(--muted);cursor:pointer;transition:color 0.2s;}
+.pw-cancel:hover{color:var(--text);}
+.pw-error{font-size:11px;color:var(--a5);text-align:center;min-height:16px;}
+.pw-locked-msg{font-size:12px;color:var(--a5);text-align:center;padding:8px;background:rgba(225,29,72,0.08);border-radius:6px;border:1px solid rgba(225,29,72,0.2);}
+
+/* NOTICE */
+.notice{background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.18);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--text-sec);margin-bottom:20px;display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
+.notice svg{width:14px;height:14px;flex-shrink:0;margin-top:1px;color:var(--a1);}
+
+/* FOOTER */
+footer{position:relative;z-index:1;text-align:center;padding:16px 24px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);background:var(--foot-bg);letter-spacing:.5px;transition:background 0.3s;}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* SESSION TIMEOUT BANNER */
+.session-warn{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:600;z-index:3000;display:none;box-shadow:0 8px 24px rgba(124,58,237,0.4);animation:fadeUp 0.3s ease;}
+
+/* MOBILE */
+@media(max-width:640px){
+  header{padding:10px 14px;}
+  main{padding:16px 14px 32px;}
+  .module-grid{grid-template-columns:1fr;}
+  .stat-bar{grid-template-columns:repeat(2,1fr);}
+  .logo-text h1{font-size:17px;}
+  .logo-text span{display:none;}
+  .search-wrap{min-width:120px;}
+}
+</style>
+</head>
+<body>
+
+<!-- SESSION TIMEOUT WARNING -->
+<div class="session-warn" id="sessionWarn">🔒 Operations Hub locked due to inactivity</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-area">
+    <div class="logo-badge">CR</div>
+    <div class="logo-text">
+      <h1>Central Registration</h1>
+      <span><strong>Command Center</strong> &nbsp;·&nbsp; <strong>Makati Medical Center</strong></span>
+    </div>
+  </div>
+  <div class="header-right">
+    <!-- Search -->
+    <div class="search-wrap">
+      <div class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search modules..." oninput="filterCards(this.value)" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" name="creg-search-field"/>
+    </div>
+    <div class="live-badge"><div class="live-dot"></div>Live</div>
+    <div id="clock">--:--:--</div>
+    <div class="theme-toggle" role="group" aria-label="Theme selector">
+      <button class="theme-btn active" id="btnDark" onclick="setTheme('dark')" title="Dark mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>Dark
+      </button>
+      <button class="theme-btn" id="btnLight" onclick="setTheme('light')" title="Light mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>Light
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- Notice -->
+  
+
+  <div style="display:flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(13,148,136,0.07);border:1px solid rgba(13,148,136,0.18);border-radius:10px;margin-bottom:20px;">
+    <div style="width:7px;height:7px;border-radius:50%;background:#0d9488;flex-shrink:0;animation:pulse 2s ease-in-out infinite;"></div>
+    <span style="font-size:12px;font-weight:600;color:var(--a2);">All systems online</span>
+    <span style="font-size:12px;color:var(--text-sec);">— Central Registration Command Center</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="section-label">System Overview</div>
+  <div class="stat-bar">
+    <div class="stat-card">
+      <div class="stat-label">Modules</div>
+      <div class="stat-value">8</div>
+      <div class="stat-sub">Active dashboards</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unit</div>
+      <div class="stat-value" style="font-size:14px;padding-top:4px;">Central Registration</div>
+      <div class="stat-sub">Makati Medical Center</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Coverage</div>
+      <div class="stat-value" style="font-size:15px;padding-top:4px;">Full Ops</div>
+      <div class="stat-sub">All workflows</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Session Date</div>
+      <div class="stat-value" id="dateVal" style="font-size:13px;padding-top:5px;">—</div>
+      <div class="stat-sub">Today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Status</div>
+      <div class="stat-value" style="color:#16a34a;font-size:15px;padding-top:4px;">Online</div>
+      <div class="stat-sub">All systems ready</div>
+    </div>
+  </div>
+
+  <!-- Recently Opened -->
+  <div class="section-label">Recently Opened</div>
+  <div class="recent-bar" id="recentBar">
+    <span class="recent-label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;display:inline;vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Recent:
+    </span>
+    <span id="recentPlaceholder" style="font-size:11px;color:var(--muted);font-style:italic;">No recent activity yet</span>
+  </div>
+
+  <!-- All Modules -->
+  <div class="section-label">All Modules</div>
+  <div class="module-grid" id="moduleGrid">
+
+    <!-- 1: Performance Dashboard -->
+    <a class="module-card c1" href="#" target="_blank" data-name="Performance Dashboard" onclick="openPerf(event)">
+      <div class="card-top-bar"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="card-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+        </div>
+        <div class="card-title">Performance Dashboard</div>
+        <div class="card-desc">KPI monitoring, productivity metrics, and operational analytics for the Central Registration unit.</div>
+        <div class="card-tags"><span class="tag">KPIs</span><span class="tag">Analytics</span><span class="tag">Reports</span></div>
+        <div class="mini-stat-strip">
+          <div class="mini-stat"><div class="mini-stat-val" id="ms-perf-1">—</div><div class="mini-stat-lbl">Registrations</div></div>
+          <div class="mini-stat"><div class="mini-stat-val" id="ms-perf-2">—</div><div class="mini-stat-lbl">Today's Avg</div></div>
+          <div class="mini-stat"><div class="mini-stat-val" id="ms-perf-3">—</div><div class="mini-stat-lbl">This Month</div></div>
+        </div>
+        <div class="card-footer" style="margin-top:10px;">
+          <div class="card-status"><div class="status-dot"></div><span class="launch-label">Open Dashboard</span></div>
+          <div>
+            <div class="card-version">v5.1</div>
+            <div class="card-updated" id="upd-perf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Not yet opened</span></div>
+          </div>
+        </div>
+      </div>
+    </a>
+
+    <!-- 2: Operations Hub (Password) -->
+    <div class="module-card c4" onclick="requestPassword()" data-name="Operations Hub" style="cursor:pointer;">
+      <div class="card-top-bar"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+          <span style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(124,58,237,0.1);color:var(--a4);border:1px solid rgba(124,58,237,0.25);">Manager Only</span>
+        </div>
+        <div class="card-title">Operations Hub</div>
+        <div class="card-desc">Internal administrative console for centralized data management and operational oversight of the Central Registration unit.</div>
+        <div class="card-tags"><span class="tag">Weekly</span><span class="tag">Monthly</span><span class="tag">Quarterly</span></div>
+        <div class="card-footer" style="margin-top:auto;">
+          <div class="card-status"><div class="status-dot" style="background:var(--a4);"></div><span class="launch-label" style="color:var(--a4);">🔒 Password Required</span></div>
+          <div>
+            <div class="card-version">v11.3</div>
+            <div class="card-updated" id="upd-ops"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Not yet opened</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3: Leave & ROFF Calendar -->
+    <a class="module-card c3" href="https://comforting-malasada-8431ca.netlify.app/" target="_blank" data-name="Leave & ROFF Calendar" onclick="trackOpen('Leave & ROFF Calendar','https://comforting-malasada-8431ca.netlify.app/')">
+      <div class="card-top-bar"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="card-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+        </div>
+        <div class="card-title">Leave & ROFF Calendar</div>
+        <div class="card-desc">Staff leave tracking, rest-off day scheduling, and team availability calendar for shift planning.</div>
+        <div class="card-tags"><span class="tag">Leave</span><span class="tag">ROFF</span><span class="tag">Scheduling</span></div>
+        <div class="card-footer" style="margin-top:auto;">
+          <div class="card-status"><div class="status-dot"></div><span class="launch-label">Open Dashboard</span></div>
+          <div>
+            <div class="card-version">v12</div>
+            <div class="card-updated" id="upd-cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Not yet opened</span></div>
+          </div>
+        </div>
+      </div>
+    </a>
+
+    <!-- 4: BQMS -->
+    <a class="module-card c2" href="CReg_BQMS_v2.2.html" target="_blank" data-name="BQMS Queue" onclick="trackOpen('BQMS Queue','CReg_BQMS_v2.2.html')">
+      <div class="card-top-bar"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+          <div class="card-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+        </div>
+        <div class="card-title">BQMS — Queue Management</div>
+        <div class="card-desc">Backup queue management for patient flow, registration queue control, and desk assignment tracking.</div>
+        <div class="card-tags"><span class="tag">Queue</span><span class="tag">Patient Flow</span><span class="tag">Real-time</span></div>
+        <div class="card-footer" style="margin-top:auto;">
+          <div class="card-status"><div class="status-dot"></div><span class="launch-label">Open Dashboard</span></div>
+          <div>
+            <div class="card-version">v2.2</div>
+            <div class="card-updated" id="upd-bqms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Not yet opened</span></div>
+          </div>
+        </div>
+      </div>
+    </a>
+
+    <!-- 5: Supply System -->
+    <a class="module-card c5" href="CREG_Supply_System_v6.html" target="_blank" data-name="Supply System" onclick="trackOpen('Supply System','CREG_Supply_System_v6.html')">
+      <div class="card-top-bar"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+          <div class="card-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+        </div>
+        <div class="card-title">Supplies Management System</div>
+        <div class="card-desc">Centralized supplies management covering inventory tracking, stock monitoring, request management, and supply chain reporting.</div>
+        <div class="card-tags"><span class="tag">Inventory</span><span class="tag">Requests</span><span class="tag">Alerts</span></div>
+        <div class="card-footer" style="margin-top:auto;">
+          <div class="card-status"><div class="status-dot"></div><span class="launch-label">Open Dashboard</span></div>
+          <div>
+            <div class="card-version">v6.0</div>
+            <div class="card-updated" id="upd-supply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Not yet opened</span></div>
+          </div>
+        </div>
+      </div>
+    </a>
+
+
+    <!-- 6: DTR Tracker — Manager Only -->
+    <div class="module-card c6" onclick="requestPasswordDTR()" data-name="DTR Tracker" style="cursor:pointer;--a6:#0ea5e9;">
+      <div class="card-top-bar" style="background:#0ea5e9;"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(14,165,233,0.12);color:#0ea5e9;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16.01" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(14,165,233,0.1);color:#0ea5e9;border:1px solid rgba(14,165,233,0.25);">Manager Only</span>
+            <span style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(234,179,8,0.1);color:#ca8a04;border:1px solid rgba(234,179,8,0.25);">Local Only</span>
+          </div>
+        </div>
+        <div class="card-title">DTR Tracker</div>
+        <div class="card-desc">Daily time record monitoring for late arrivals, undertime, and attendance compliance. Accessible locally only for data privacy and security.</div>
+        <div class="card-tags">
+          <span class="tag" style="color:#0ea5e9;border-color:rgba(14,165,233,0.28);background:rgba(14,165,233,0.07);">Attendance</span>
+          <span class="tag" style="color:#0ea5e9;border-color:rgba(14,165,233,0.28);background:rgba(14,165,233,0.07);">Late</span>
+          <span class="tag" style="color:#0ea5e9;border-color:rgba(14,165,233,0.28);background:rgba(14,165,233,0.07);">Undertime</span>
+        </div>
+        <div class="card-footer" style="margin-top:auto;">
+          <div class="card-status">
+            <div class="status-dot" style="background:#0ea5e9;"></div>
+            <span class="launch-label" style="color:#0ea5e9;">🔒 Password Required</span>
+          </div>
+          <div>
+            <div class="card-version">v3.1</div>
+            <div class="card-updated" id="upd-dtr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Not yet opened</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 7: Financial Planner -->
+    <a class="module-card" href="CREG_Financial_Planner_v2.html" target="_blank"
+       data-name="Financial Planner"
+       onclick="trackOpen('Financial Planner','CREG_Financial_Planner_v2.html')"
+       style="--card-accent:#16a34a;border-color:rgba(22,163,74,0.2);cursor:pointer;">
+      <div class="card-top-bar" style="background:linear-gradient(90deg,#16a34a,#4ade80);"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(22,163,74,0.12);color:#16a34a;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+          <div class="card-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+        </div>
+        <div class="card-title">Financial Planner</div>
+        <div class="card-desc">Budget planning, expenditure tracking, and financial reporting for the Central Registration unit.</div>
+        <div class="card-tags">
+          <span class="tag" style="color:#16a34a;border-color:rgba(22,163,74,0.28);background:rgba(22,163,74,0.07);">Budget</span>
+          <span class="tag" style="color:#16a34a;border-color:rgba(22,163,74,0.28);background:rgba(22,163,74,0.07);">Expenses</span>
+          <span class="tag" style="color:#16a34a;border-color:rgba(22,163,74,0.28);background:rgba(22,163,74,0.07);">Reports</span>
+        </div>
+        <div class="card-footer" style="margin-top:auto;">
+          <div class="card-status">
+            <div class="status-dot" style="background:#16a34a;"></div>
+            <span class="launch-label">Open Dashboard</span>
+          </div>
+          <div>
+            <div class="card-version">v2.0</div>
+            <div class="card-updated" id="upd-fin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Not yet opened</span></div>
+          </div>
+        </div>
+      </div>
+    </a>
+
+
+    <!-- 9: PSS Scorecard — Manager Only, Local Only -->
+    <div class="module-card" onclick="requestPasswordScorecard()" data-name="PSS Scorecard"
+         style="cursor:pointer;background:var(--card);border:1px solid rgba(234,88,12,0.2);">
+      <div class="card-top-bar" style="background:linear-gradient(90deg,#ea580c,#f97316);"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(234,88,12,0.12);color:#ea580c;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(234,88,12,0.1);color:#ea580c;border:1px solid rgba(234,88,12,0.25);">Manager Only</span>
+            <span style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(234,179,8,0.1);color:#ca8a04;border:1px solid rgba(234,179,8,0.25);">Local Only</span>
+          </div>
+        </div>
+        <div class="card-title">PSS Scorecard</div>
+        <div class="card-desc">Performance scorecard for Patient Service Staff — KPI tracking, individual scores, and compliance monitoring.</div>
+        <div class="card-tags">
+          <span class="tag" style="color:#ea580c;border-color:rgba(234,88,12,0.28);background:rgba(234,88,12,0.07);">Scorecard</span>
+          <span class="tag" style="color:#ea580c;border-color:rgba(234,88,12,0.28);background:rgba(234,88,12,0.07);">KPIs</span>
+          <span class="tag" style="color:#ea580c;border-color:rgba(234,88,12,0.28);background:rgba(234,88,12,0.07);">Staff</span>
+        </div>
+        <div class="card-footer" style="margin-top:auto;">
+          <div class="card-status">
+            <div class="status-dot" style="background:#ea580c;"></div>
+            <span class="launch-label" style="color:#ea580c;">🔒 Password Required</span>
+          </div>
+          <div>
+            <div class="card-version">v4.0</div>
+            <div class="card-updated" id="upd-scorecard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Not yet opened</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9: Quick Reference (Under Construction) -->
+    <div class="module-card c6 uc-card" data-name="Quick Reference">
+      <div class="card-top-bar"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div>
+          <span style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(202,138,4,0.12);color:#ca8a04;border:1px solid rgba(202,138,4,0.28);">Coming Soon</span>
+        </div>
+        <div class="card-title" style="color:var(--uc-text);">Quick Reference</div>
+        <div class="card-desc" style="color:var(--uc-sub);">Procedures, forms, guidelines, and quick reference materials for the Central Registration team.</div>
+        <div class="card-tags"><span class="tag">Reference</span><span class="tag">Guides</span><span class="tag">Forms</span></div>
+        <div class="card-footer" style="margin-top:auto;">
+          <div class="card-status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2" style="width:12px;height:12px;flex-shrink:0;"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+            <span style="font-size:10px;color:#ca8a04;font-weight:500;">Under Construction</span>
+          </div>
+          <div class="card-version" style="color:#ca8a04;">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /module-grid -->
+</main>
+
+<footer>
+  Central Registration Command Center &nbsp;·&nbsp; Makati Medical Center &nbsp;·&nbsp; <span id="footerYear"></span>
+</footer>
+
+<!-- PASSWORD MODAL -->
+<div class="pw-overlay" id="pwOverlay">
+  <div class="pw-box">
+    <div class="pw-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+    <div class="pw-title" id="pwModalTitle">Manager Access Only</div>
+    <div class="pw-sub" id="pwModalSub">Enter password to open Operations Hub</div>
+    <div class="pw-attempts" id="pwAttempts"></div>
+    <input class="pw-input" type="password" id="pwInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPassword()"/>
+    <div class="pw-error" id="pwError"></div>
+    <button class="pw-btn" id="pwBtn" onclick="checkPassword()">Unlock</button>
+    <div class="pw-cancel" onclick="closePW()">Cancel</div>
+  </div>
+</div>
+
+<script>
+
+/* ══ PERFORMANCE DASHBOARD — Cache busting ══ */
+function openPerf(e) {
+  e.preventDefault();
+  const ts = Date.now();
+  const url = 'CentralReg_Dashboard_2026.html?v=' + ts;
+  trackOpen('Performance Dashboard', 'CentralReg_Dashboard_2026.html');
+  window.open(url, '_blank');
+}
+
+/* ══ CLOCK ══ */
+function tick() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('dateVal').textContent = now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('footerYear').textContent = now.getFullYear();
+}
+tick(); setInterval(tick,1000);
+
+/* ══ THEME ══ */
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('btnDark').classList.toggle('active', t==='dark');
+  document.getElementById('btnLight').classList.toggle('active', t==='light');
+  try { localStorage.setItem('creg_theme',t); } catch(e){}
+}
+(function(){
+  try { const s=localStorage.getItem('creg_theme'); if(s==='light') setTheme('light'); } catch(e){}
+})();
+
+/* ══ SEARCH ══ */
+function filterCards(q) {
+  const term = q.toLowerCase().trim();
+  document.querySelectorAll('#moduleGrid .module-card').forEach(card => {
+    const name = (card.getAttribute('data-name')||'').toLowerCase();
+    const text = card.innerText.toLowerCase();
+    card.style.display = (!term || name.includes(term) || text.includes(term)) ? '' : 'none';
+  });
+}
+
+/* ══ TRACK RECENTLY OPENED ══ */
+const RECENT_KEY = 'creg_recent';
+const UPDATED_MAP = {
+  'Performance Dashboard':'upd-perf',
+  'Operations Hub':'upd-ops',
+  'Leave & ROFF Calendar':'upd-cal',
+  'BQMS Queue':'upd-bqms',
+  'Supply System':'upd-supply',
+  'DTR Tracker':'upd-dtr',
+  'Financial Planner':'upd-fin',
+  'PSS Scorecard':'upd-scorecard'
+};
+
+function timeAgo(ts) {
+  const diff = Math.floor((Date.now()-ts)/1000);
+  if(diff<60) return 'Just now';
+  if(diff<3600) return Math.floor(diff/60)+'m ago';
+  if(diff<86400) return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+function loadRecent() {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY)||'[]');
+    const bar = document.getElementById('recentBar');
+    const ph = document.getElementById('recentPlaceholder');
+    if(!list.length) return;
+    if(ph) ph.remove();
+    // Remove old chips
+    bar.querySelectorAll('.recent-chip').forEach(c=>c.remove());
+    list.slice(0,5).forEach(item => {
+      const chip = document.createElement('a');
+      chip.className='recent-chip';
+      chip.href = item.url;
+      chip.target = '_blank';
+      chip.onclick = ()=>trackOpen(item.name, item.url);
+      chip.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>${item.name} <span class="recent-time">&nbsp;${timeAgo(item.ts)}</span>`;
+      bar.appendChild(chip);
+    });
+    // Update "last opened" under each card
+    list.forEach(item => {
+      const elId = UPDATED_MAP[item.name];
+      if(elId) {
+        const el = document.getElementById(elId);
+        if(el) el.querySelector('span').textContent = 'Opened '+timeAgo(item.ts);
+      }
+    });
+  } catch(e){}
+}
+
+function trackOpen(name, url) {
+  try {
+    let list = JSON.parse(localStorage.getItem(RECENT_KEY)||'[]');
+    list = list.filter(i=>i.name!==name);
+    list.unshift({name,url,ts:Date.now()});
+    if(list.length>10) list=list.slice(0,10);
+    localStorage.setItem(RECENT_KEY,JSON.stringify(list));
+    loadRecent();
+  } catch(e){}
+  return true;
+}
+
+loadRecent();
+setInterval(loadRecent, 60000);
+
+
+
+/* ══ PSS SCORECARD PASSWORD ══ */
+function requestPasswordScorecard() {
+  pwTarget = 'scorecard';
+  document.getElementById('pwModalTitle').textContent = 'PSS Scorecard Access';
+  document.getElementById('pwModalSub').textContent = 'Enter password to open PSS Scorecard';
+  requestPasswordModal();
+}
+
+/* ══ DTR PASSWORD — reuses same modal as Ops Hub ══ */
+let pwTarget = 'ops'; // 'ops' or 'dtr'
+
+function requestPasswordDTR() {
+  pwTarget = 'dtr';
+  document.getElementById('pwModalTitle').textContent = 'DTR Tracker Access';
+  document.getElementById('pwModalSub').textContent = 'Enter password to open DTR Tracker';
+  requestPasswordModal();
+}
+
+function requestPassword() {
+  pwTarget = 'ops';
+  document.getElementById('pwModalTitle').textContent = 'Manager Access Only';
+  document.getElementById('pwModalSub').textContent = 'Enter password to open Operations Hub';
+  requestPasswordModal();
+}
+
+function requestPasswordModal() {
+  if(pwTarget==='ops' && opsUnlocked && (Date.now()-opsUnlockedAt) < SESSION_MS) {
+    window.open('CREG_Operations_Hub_v11_3.html','_blank');
+    trackOpen('Operations Hub','CREG_Operations_Hub_v11_3.html');
+    return;
+  }
+  const overlay = document.getElementById('pwOverlay');
+  const btn = document.getElementById('pwBtn');
+  const attemptsEl = document.getElementById('pwAttempts');
+  document.getElementById('pwInput').value='';
+  document.getElementById('pwError').textContent='';
+  if(Date.now() < pwLockUntil) {
+    const remaining = Math.ceil((pwLockUntil-Date.now())/1000/60);
+    attemptsEl.textContent='';
+    document.getElementById('pwError').textContent='Too many attempts. Try again in '+remaining+' min.';
+    btn.disabled=true;
+  } else {
+    btn.disabled=false;
+    attemptsEl.textContent = pwAttempts>0 ? (MAX_ATTEMPTS-pwAttempts)+' attempt(s) remaining' : '';
+  }
+  overlay.classList.add('active');
+  setTimeout(()=>document.getElementById('pwInput').focus(),120);
+}
+
+/* ══ PASSWORD PROTECTION ══ */
+// ⚠️ Change this password to something only you know
+const OPS_PASSWORD = 'Barry05232014';
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_MS   = 5 * 60 * 1000; // 5 minutes
+const SESSION_MS   = 30 * 60 * 1000; // 30 minutes
+
+let pwAttempts = 0;
+let pwLockUntil = 0;
+let opsUnlocked = false;
+let opsUnlockedAt = 0;
+let sessionTimer = null;
+
+// requestPassword() is defined above — duplicate removed
+
+function checkPassword() {
+  if(Date.now() < pwLockUntil) return;
+  const val = document.getElementById('pwInput').value;
+  if(val===OPS_PASSWORD) {
+    pwAttempts=0;
+    closePW();
+    if(pwTarget==='scorecard') {
+      window.open('CREG_PSS_Scorecard_v4.html','_blank');
+      trackOpen('PSS Scorecard','CREG_PSS_Scorecard_v4.html');
+    } else if(pwTarget==='dtr') {
+      // DTR is local only — opens from same folder as this file
+      const dtrWin = window.open('CREG_DTR_Tracker_v3.html','_blank');
+      trackOpen('DTR Tracker','CREG_DTR_Tracker_v3.html');
+    } else {
+      opsUnlocked=true;
+      opsUnlockedAt=Date.now();
+      window.open('CREG_Operations_Hub_v11_3.html','_blank');
+      trackOpen('Operations Hub','CREG_Operations_Hub_v11_3.html');
+      startSessionTimer();
+    }
+  } else {
+    pwAttempts++;
+    const inp=document.getElementById('pwInput');
+    inp.classList.add('error');
+    inp.value='';
+    setTimeout(()=>inp.classList.remove('error'),400);
+    if(pwAttempts>=MAX_ATTEMPTS) {
+      pwLockUntil=Date.now()+LOCKOUT_MS;
+      document.getElementById('pwError').textContent='Account locked for 5 minutes.';
+      document.getElementById('pwBtn').disabled=true;
+      document.getElementById('pwAttempts').textContent='';
+    } else {
+      document.getElementById('pwError').textContent='Incorrect password.';
+      document.getElementById('pwAttempts').textContent=(MAX_ATTEMPTS-pwAttempts)+' attempt(s) remaining';
+    }
+  }
+}
+
+function closePW() {
+  document.getElementById('pwOverlay').classList.remove('active');
+}
+
+/* ══ SESSION TIMEOUT ══ */
+function startSessionTimer() {
+  if(sessionTimer) clearTimeout(sessionTimer);
+  sessionTimer=setTimeout(()=>{
+    opsUnlocked=false;
+    const warn=document.getElementById('sessionWarn');
+    warn.style.display='block';
+    setTimeout(()=>warn.style.display='none',4000);
+  },SESSION_MS);
+}
+
+/* ══ KEYBOARD SHORTCUTS ══ */
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') closePW();
+});
+document.getElementById('pwOverlay').addEventListener('click',function(e){
+  if(e.target===this) closePW();
+});
+
+/* ══ MINI STATS — placeholder values (update when real data available) ══ */
+document.getElementById('ms-perf-1').textContent='—';
+document.getElementById('ms-perf-2').textContent='—';
+document.getElementById('ms-perf-3').textContent='—';
+</script>
+</body>
+</html>
