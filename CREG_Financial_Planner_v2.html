@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CREG — Financial Planner v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+[data-theme="dark"]{
+  --bg:#0d1b2e;--surface:#0a1628;--card:#112244;--card-h:#163060;
+  --border:rgba(37,99,235,0.2);--border-h:rgba(37,99,235,0.4);
+  --text:#f0f4ff;--text-sec:#a8bcdc;--muted:#5a7aaa;
+  --hdr-bg:rgba(10,22,40,0.95);--stat-bg:#112244;
+  --foot-bg:rgba(8,16,28,0.8);--toggle-bg:#0f2040;--toggle-bd:rgba(37,99,235,0.25);
+  --shadow:0 20px 60px rgba(0,0,0,0.5);
+  --grid-ln:rgba(37,99,235,0.04);--mesh1:rgba(37,99,235,0.07);--mesh2:rgba(6,182,212,0.05);
+  --input-bg:#0a1628;--input-bd:rgba(37,99,235,0.25);
+}
+[data-theme="light"]{
+  --bg:#f0f4fb;--surface:#ffffff;--card:#ffffff;--card-h:#f5f8ff;
+  --border:rgba(30,64,175,0.13);--border-h:rgba(30,64,175,0.35);
+  --text:#1e293b;--text-sec:#475569;--muted:#94a3b8;
+  --hdr-bg:rgba(240,244,251,0.95);--stat-bg:#ffffff;
+  --foot-bg:rgba(220,228,248,0.7);--toggle-bg:#e8eef8;--toggle-bd:rgba(30,64,175,0.2);
+  --shadow:0 12px 40px rgba(30,64,175,0.1);
+  --grid-ln:rgba(30,64,175,0.03);--mesh1:rgba(30,64,175,0.05);--mesh2:rgba(13,148,136,0.04);
+  --input-bg:#ffffff;--input-bd:rgba(30,64,175,0.2);
+}
+:root{--a1:#2563eb;--a2:#0d9488;--a3:#d97706;--a4:#7c3aed;--a5:#e11d48;--a6:#0ea5e9;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 40% at 15% 10%,var(--mesh1) 0%,transparent 60%),radial-gradient(ellipse 60% 35% at 85% 85%,var(--mesh2) 0%,transparent 60%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--grid-ln) 1px,transparent 1px),linear-gradient(90deg,var(--grid-ln) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--hdr-bg);backdrop-filter:blur(16px);flex-wrap:wrap;gap:10px;}
+.logo-area{display:flex;align-items:center;gap:13px;}
+.logo-badge{width:44px;height:44px;border-radius:11px;background:var(--a2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(13,148,136,0.35);}
+.logo-text h1{font-weight:800;font-size:20px;color:var(--text);letter-spacing:-0.5px;line-height:1;}
+.logo-text span{font-size:11px;color:var(--text-sec);font-weight:500;letter-spacing:.4px;margin-top:3px;display:block;}
+.logo-text span strong{font-weight:600;color:var(--text);}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--a2);font-weight:600;letter-spacing:.8px;text-transform:uppercase;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--a2);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(13,148,136,.5);}50%{box-shadow:0 0 0 5px rgba(13,148,136,0);}}
+#clock{font-size:12px;color:var(--text-sec);font-family:'Courier New',monospace;font-weight:600;}
+.theme-toggle{display:flex;background:var(--toggle-bg);border:1px solid var(--toggle-bd);border-radius:8px;overflow:hidden;}
+.theme-btn{padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:background .2s,color .2s;}
+.theme-btn.active{background:var(--a1);color:#fff;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;color:var(--text-sec);cursor:pointer;text-decoration:none;transition:all .2s;}
+.back-btn:hover{border-color:var(--border-h);color:var(--text);}
+
+/* MAIN */
+main{position:relative;z-index:1;padding:20px 24px 60px;max-width:1200px;margin:0 auto;}
+
+/* SECTION LABEL */
+.section-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-sec);margin-bottom:14px;margin-top:26px;display:flex;align-items:center;gap:10px;}
+.section-label:first-child{margin-top:0;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* TAB NAV — two rows for 9 tabs */
+.tab-nav{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:22px;padding:6px;background:var(--card);border:1px solid var(--border);border-radius:12px;}
+.tab-btn{flex:1;min-width:100px;padding:8px 10px;font-size:10.5px;font-weight:700;border:none;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;}
+.tab-btn.active{background:var(--a1);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.3);}
+.tab-btn:not(.active):hover{background:var(--card-h);color:var(--text);}
+.tab-btn svg{width:12px;height:12px;flex-shrink:0;}
+.tab-pane{display:none;animation:fadeUp .3s ease both;}
+.tab-pane.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.card-header-bar{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--border);}
+.card-icon-sm{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.card-icon-sm svg{width:16px;height:16px;}
+.card-title-sm{font-size:13px;font-weight:800;color:var(--text);}
+.card-subtitle{font-size:11px;color:var(--text-sec);margin-top:1px;}
+.card-body-pad{padding:18px;}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-group label{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);}
+.form-group input,.form-group select{background:var(--input-bg);border:1px solid var(--input-bd);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;width:100%;}
+.form-group input:focus,.form-group select:focus{border-color:var(--a1);}
+.form-group input::placeholder{color:var(--muted);}
+.form-group select option{background:var(--card);color:var(--text);}
+.field-hint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:2px;}
+.field-hint.green{color:var(--a2);}
+
+/* RESULT CARDS */
+.result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-top:16px;}
+.result-card{background:var(--stat-bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;border-left:3px solid var(--a1);}
+.result-card.green{border-left-color:var(--a2);}
+.result-card.amber{border-left-color:var(--a3);}
+.result-card.red{border-left-color:var(--a5);}
+.result-card.purple{border-left-color:var(--a4);}
+.result-card.sky{border-left-color:var(--a6);}
+.result-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.result-val{font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.3px;line-height:1;}
+.result-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+
+/* PROGRESS */
+.progress-wrap{margin-top:14px;}
+.progress-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px;}
+.progress-label{color:var(--text-sec);font-weight:600;}
+.progress-pct{font-weight:700;color:var(--text);}
+.progress-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+
+/* BUTTONS */
+.btn{padding:9px 18px;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--a1);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.25);}
+.btn-primary:hover{opacity:.88;}
+.btn-success{background:var(--a2);color:#fff;}
+.btn-success:hover{opacity:.88;}
+.btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text-sec);}
+.btn-ghost:hover{border-color:var(--border-h);color:var(--text);}
+.btn-pdf{background:var(--a5);color:#fff;display:inline-flex;align-items:center;gap:6px;}
+.btn-pdf:hover{opacity:.88;}
+.btn-amber{background:var(--a3);color:#fff;}
+.btn-amber:hover{opacity:.88;}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center;}
+
+/* TIP BOX */
+.tip-box{background:rgba(13,148,136,.07);border:1px solid rgba(13,148,136,.18);border-radius:8px;padding:10px 13px;font-size:11px;color:var(--text-sec);line-height:1.6;margin-top:12px;display:flex;gap:8px;}
+.tip-box svg{width:13px;height:13px;color:var(--a2);flex-shrink:0;margin-top:1px;}
+.tip-box.amber{background:rgba(215,119,6,.07);border-color:rgba(215,119,6,.18);}
+.tip-box.amber svg{color:var(--a3);}
+.tip-box.blue{background:rgba(37,99,235,.07);border-color:rgba(37,99,235,.18);}
+.tip-box.blue svg{color:var(--a1);}
+
+/* NOTICE */
+.notice{background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.18);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--text-sec);margin-bottom:18px;display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
+.notice svg{width:14px;height:14px;flex-shrink:0;margin-top:1px;color:var(--a1);}
+
+/* CHART */
+.chart-wrap{position:relative;margin-top:16px;}
+.chart-wrap canvas{max-height:260px;}
+
+/* DEBT TABLE */
+.debt-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+.debt-table th{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;}
+.debt-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text-sec);vertical-align:middle;}
+.debt-table td strong{color:var(--text);font-weight:700;}
+.debt-table tr:last-child td{border-bottom:none;}
+.debt-table tr:hover td{background:var(--card-h);}
+.debt-add-form{background:var(--stat-bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:14px;}
+.debt-add-title{font-size:11px;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;}
+
+/* INVEST CARDS */
+.invest-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:4px;}
+.invest-card{background:var(--stat-bg);border:1px solid var(--border);border-radius:12px;padding:16px;border-top:3px solid;}
+.invest-card.ic1{border-top-color:var(--a1);}
+.invest-card.ic2{border-top-color:var(--a2);}
+.invest-card.ic3{border-top-color:var(--a3);}
+.invest-card.ic4{border-top-color:var(--a4);}
+.invest-card.ic5{border-top-color:var(--a5);}
+.invest-card.ic6{border-top-color:var(--a6);}
+.invest-name{font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px;}
+.invest-rows{font-size:11px;color:var(--text-sec);display:flex;flex-direction:column;gap:5px;}
+.invest-row{display:flex;justify-content:space-between;}
+.invest-row strong{color:var(--text);font-weight:700;}
+.invest-desc{font-size:10px;color:var(--muted);margin-top:8px;line-height:1.5;}
+.risk-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;}
+.risk-low{background:rgba(13,148,136,.12);color:var(--a2);border:1px solid rgba(13,148,136,.25);}
+.risk-med{background:rgba(215,119,6,.12);color:var(--a3);border:1px solid rgba(215,119,6,.25);}
+.risk-high{background:rgba(225,29,72,.12);color:var(--a5);border:1px solid rgba(225,29,72,.25);}
+
+/* HEALTH SCORE */
+.score-wrap{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin-top:4px;}
+.score-ring-block{display:flex;flex-direction:column;align-items:center;min-width:160px;}
+.score-ring{position:relative;width:130px;height:130px;}
+.score-ring svg{transform:rotate(-90deg);}
+.score-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.score-num{font-size:32px;font-weight:800;line-height:1;}
+.score-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+.score-grade{font-size:16px;font-weight:800;margin-top:8px;letter-spacing:.5px;}
+.score-details{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px;}
+.score-item{background:var(--stat-bg);border:1px solid var(--border);border-radius:8px;padding:10px 13px;display:flex;align-items:center;gap:10px;}
+.score-item-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;}
+.score-item-body{flex:1;}
+.score-item-label{font-size:10px;font-weight:700;color:var(--text-sec);}
+.score-item-val{font-size:12px;font-weight:800;color:var(--text);}
+.score-item-sub{font-size:10px;color:var(--muted);}
+.score-pts{font-size:11px;font-weight:800;margin-left:auto;}
+
+/* PAYSLIP */
+.payslip-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;}
+.payslip-section{background:var(--stat-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.payslip-section-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid var(--border);}
+.payslip-section-title.income{color:var(--a2);}
+.payslip-section-title.deduct{color:var(--a5);}
+.payslip-row{display:flex;justify-content:space-between;padding:8px 14px;font-size:12px;border-bottom:1px solid var(--border);}
+.payslip-row:last-child{border-bottom:none;}
+.payslip-row span{color:var(--text-sec);}
+.payslip-row strong{color:var(--text);font-weight:700;}
+.payslip-total{display:flex;justify-content:space-between;padding:11px 14px;background:var(--card-h);font-size:13px;font-weight:800;}
+.payslip-take-home{background:rgba(13,148,136,.08);border:2px solid rgba(13,148,136,.3);border-radius:10px;padding:16px;text-align:center;margin-top:14px;}
+.payslip-take-home-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--a2);margin-bottom:6px;}
+.payslip-take-home-val{font-size:28px;font-weight:800;color:var(--a2);}
+.payslip-take-home-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* GOAL TRACKER */
+.goals-list{display:flex;flex-direction:column;gap:12px;margin-top:4px;}
+.goal-item{background:var(--stat-bg);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.goal-item-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.goal-name{font-size:13px;font-weight:800;color:var(--text);}
+.goal-meta{display:flex;gap:10px;font-size:11px;color:var(--text-sec);}
+.goal-meta span strong{color:var(--text);font-weight:700;}
+.goal-eta{font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px;}
+
+/* SALARY PROJECTOR */
+.scenario-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:14px;}
+.scenario-card{background:var(--stat-bg);border:1px solid var(--border);border-radius:10px;padding:13px;border-top:3px solid;}
+.scenario-label{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.scenario-val{font-size:16px;font-weight:800;color:var(--text);margin-bottom:3px;}
+.scenario-sub{font-size:10px;color:var(--muted);}
+
+/* QUIZ */
+.quiz-question{background:var(--stat-bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+.quiz-q-text{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;line-height:1.5;}
+.quiz-options{display:flex;flex-direction:column;gap:7px;}
+.quiz-option{padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-sec);cursor:pointer;transition:all .2s;text-align:left;font-family:inherit;font-weight:500;}
+.quiz-option:hover{border-color:var(--a1);color:var(--text);}
+.quiz-option.correct{background:rgba(13,148,136,.12);border-color:var(--a2);color:var(--a2);font-weight:700;}
+.quiz-option.wrong{background:rgba(225,29,72,.1);border-color:var(--a5);color:var(--a5);font-weight:700;}
+.quiz-option.reveal-correct{background:rgba(13,148,136,.08);border-color:var(--a2);color:var(--a2);}
+.quiz-explanation{font-size:11px;color:var(--text-sec);padding:9px 13px;background:rgba(37,99,235,.06);border-radius:7px;margin-top:9px;line-height:1.6;display:none;}
+.quiz-score-box{background:var(--stat-bg);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;display:none;}
+.quiz-score-big{font-size:48px;font-weight:800;line-height:1;}
+.quiz-score-label{font-size:12px;color:var(--muted);margin-top:4px;}
+.quiz-score-grade{font-size:18px;font-weight:800;margin-top:12px;}
+.quiz-score-msg{font-size:12px;color:var(--text-sec);margin-top:6px;line-height:1.6;}
+.quiz-progress-bar{height:4px;background:var(--border);border-radius:2px;margin-bottom:16px;overflow:hidden;}
+.quiz-progress-fill{height:100%;background:var(--a1);border-radius:2px;transition:width .4s ease;}
+
+/* HABIT TRACKER */
+.habit-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-top:12px;}
+.habit-cell{aspect-ratio:1;border-radius:3px;background:var(--border);cursor:pointer;transition:background .2s;position:relative;}
+.habit-cell.done{background:var(--a2);}
+.habit-cell.partial{background:var(--a3);}
+.habit-cell:hover{opacity:.8;}
+.habit-month-labels{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:4px;}
+.habit-month-label{font-size:9px;color:var(--muted);text-align:center;font-weight:600;}
+.habit-streak{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--text-sec);}
+.habit-streak strong{color:var(--text);font-size:14px;font-weight:800;}
+
+/* BONUS ALLOCATOR */
+.alloc-bar{height:28px;border-radius:8px;overflow:hidden;display:flex;margin:14px 0;transition:all .3s;}
+.alloc-segment{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;transition:width .4s ease;white-space:nowrap;overflow:hidden;}
+.alloc-legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px;}
+.alloc-legend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-sec);}
+.alloc-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.alloc-val{font-weight:700;color:var(--text);margin-left:auto;}
+
+/* COMPARISON */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
+.compare-card{background:var(--stat-bg);border:2px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+.compare-card.winner{border-color:var(--a2);background:rgba(13,148,136,.07);}
+.compare-age{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;}
+.compare-val{font-size:22px;font-weight:800;color:var(--text);margin-bottom:3px;}
+.compare-gain{font-size:11px;font-weight:700;}
+.compare-diff{background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.25);border-radius:8px;padding:12px;text-align:center;margin-top:12px;font-size:12px;color:var(--text-sec);}
+.compare-diff strong{font-size:16px;color:var(--a2);font-weight:800;}
+
+/* FOOTER */
+footer{position:relative;z-index:1;text-align:center;padding:14px 24px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);background:var(--foot-bg);}
+
+/* MOBILE */
+@media(max-width:640px){
+  header{padding:10px 14px;}
+  main{padding:12px 12px 48px;}
+  .logo-text h1{font-size:15px;}
+  .logo-text span{display:none;}
+  .tab-btn{min-width:80px;font-size:10px;padding:7px 7px;}
+  .form-grid{grid-template-columns:1fr;}
+  .result-grid{grid-template-columns:1fr 1fr;}
+  .payslip-grid{grid-template-columns:1fr;}
+  .compare-grid{grid-template-columns:1fr;}
+  .score-wrap{flex-direction:column;}
+}
+
+/* PRINT */
+@media print{
+  body{background:#fff!important;color:#000!important;}
+  header,footer,.tab-nav,.btn-row,.back-btn,.theme-toggle,.live-badge,#clock{display:none!important;}
+  .tab-pane{display:block!important;}
+  .card{break-inside:avoid;border:1px solid #ddd!important;background:#fff!important;}
+  main{padding:8px!important;}
+  *{color:#000!important;background:#fff!important;border-color:#ddd!important;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-badge">₱</div>
+    <div class="logo-text">
+      <h1>Financial Planner <span style="font-size:11px;background:var(--a2);color:#fff;padding:1px 7px;border-radius:4px;vertical-align:middle;margin-left:4px;">v2</span></h1>
+      <span><strong>CREG Staff Tool</strong> &nbsp;·&nbsp; <strong>Makati Medical Center</strong></span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>Personal</div>
+    <div id="clock">--:--:--</div>
+    <div class="theme-toggle">
+      <button class="theme-btn active" id="btnDark" onclick="setTheme('dark')">🌙 Dark</button>
+      <button class="theme-btn" id="btnLight" onclick="setTheme('light')">☀️ Light</button>
+    </div>
+    <a class="back-btn" href="https://nadine22688-sys.github.io/creg-hub/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>Hub
+    </a>
+  </div>
+</header>
+
+<main>
+  <div class="notice">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>For <strong>educational purposes only</strong>. Projections are estimates. Consult a licensed financial advisor for personalized advice. All data stays on your device only.</span>
+  </div>
+
+  <!-- TAB NAV -->
+  <div class="tab-nav" role="tablist">
+    <button class="tab-btn active" onclick="switchTab('score')" id="tab-score">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Health Score
+    </button>
+    <button class="tab-btn" onclick="switchTab('budget')" id="tab-budget">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Budget
+    </button>
+    <button class="tab-btn" onclick="switchTab('payslip')" id="tab-payslip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Payslip
+    </button>
+    <button class="tab-btn" onclick="switchTab('emergency')" id="tab-emergency">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Emergency
+    </button>
+    <button class="tab-btn" onclick="switchTab('mp2')" id="tab-mp2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>MP2
+    </button>
+    <button class="tab-btn" onclick="switchTab('sss')" id="tab-sss">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>SSS Pension
+    </button>
+    <button class="tab-btn" onclick="switchTab('debt')" id="tab-debt">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Debt
+    </button>
+    <button class="tab-btn" onclick="switchTab('bonus')" id="tab-bonus">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Bonus
+    </button>
+    <button class="tab-btn" onclick="switchTab('goals')" id="tab-goals">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Goals
+    </button>
+    <button class="tab-btn" onclick="switchTab('salary')" id="tab-salary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Raise Projector
+    </button>
+    <button class="tab-btn" onclick="switchTab('compare')" id="tab-compare">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>Early vs Late
+    </button>
+    <button class="tab-btn" onclick="switchTab('habit')" id="tab-habit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Habit Tracker
+    </button>
+    <button class="tab-btn" onclick="switchTab('invest')" id="tab-invest">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Invest 101
+    </button>
+    <button class="tab-btn" onclick="switchTab('quiz')" id="tab-quiz">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Quiz
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: FINANCIAL HEALTH SCORE                    -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane active" id="pane-score">
+    <div class="section-label" style="margin-top:0;">Financial Health Score</div>
+    <div class="notice blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Fill in the <strong>Budget</strong>, <strong>Emergency</strong>, <strong>MP2</strong>, and <strong>Debt</strong> tabs first — this score auto-computes based on your inputs across all modules. The more you fill in, the more accurate your score.</span>
+    </div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(37,99,235,.12);color:var(--a1);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div><div class="card-title-sm">Your Financial Health Score</div><div class="card-subtitle">Based on 5 key pillars — max 100 points</div></div>
+        <button class="btn btn-primary" style="margin-left:auto;" onclick="calcScore()">Refresh Score</button>
+      </div>
+      <div class="card-body-pad">
+        <div class="score-wrap">
+          <div class="score-ring-block">
+            <div class="score-ring">
+              <svg width="130" height="130" viewBox="0 0 130 130">
+                <circle cx="65" cy="65" r="55" fill="none" stroke="var(--border)" stroke-width="12"/>
+                <circle id="score-ring-circle" cx="65" cy="65" r="55" fill="none" stroke="var(--a2)" stroke-width="12" stroke-dasharray="345.4" stroke-dashoffset="345.4" stroke-linecap="round" style="transition:stroke-dashoffset .8s ease,stroke .4s;"/>
+              </svg>
+              <div class="score-ring-center">
+                <div class="score-num" id="score-num">—</div>
+                <div class="score-lbl">/ 100</div>
+              </div>
+            </div>
+            <div class="score-grade" id="score-grade" style="color:var(--muted);">Fill in tabs</div>
+          </div>
+          <div class="score-details" id="score-details">
+            <!-- filled by JS -->
+          </div>
+        </div>
+        <div class="tip-box" style="margin-top:16px;" id="score-tip" >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg>
+          <span id="score-tip-text">Complete the other tabs to see your personalized score and recommendations.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: BUDGET PLANNER                            -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-budget">
+    <div class="section-label" style="margin-top:0;">Monthly Budget Planner</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(37,99,235,.12);color:var(--a1);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div><div class="card-title-sm">Income</div><div class="card-subtitle">Enter all monthly income sources</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group"><label>Basic Salary (Gross)</label><input type="number" id="b-gross" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Net Take-Home Pay</label><input type="number" id="b-net" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Other Income / Side Hustle</label><input type="number" id="b-other" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Allowances / Benefits</label><input type="number" id="b-allow" placeholder="0.00" oninput="calcBudget()"/></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(225,29,72,.11);color:var(--a5);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+        <div><div class="card-title-sm">Fixed Expenses</div><div class="card-subtitle">Regular monthly obligations</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group"><label>Rent / Amortization</label><input type="number" id="b-rent" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Utilities (Electric, Water)</label><input type="number" id="b-util" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Internet / Phone</label><input type="number" id="b-inet" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Transportation</label><input type="number" id="b-trans" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Loan Payments</label><input type="number" id="b-loan" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Insurance / SSS / PhilHealth</label><input type="number" id="b-ins" placeholder="0.00" oninput="calcBudget()"/></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(215,119,6,.11);color:var(--a3);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></div>
+        <div><div class="card-title-sm">Variable Expenses</div><div class="card-subtitle">Day-to-day spending</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group"><label>Groceries / Food</label><input type="number" id="b-food" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Dining Out / Takeout</label><input type="number" id="b-dining" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Clothing / Personal Care</label><input type="number" id="b-cloth" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Entertainment / Subscriptions</label><input type="number" id="b-ent" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Health / Medicine</label><input type="number" id="b-health" placeholder="0.00" oninput="calcBudget()"/></div>
+          <div class="form-group"><label>Other / Miscellaneous</label><input type="number" id="b-misc" placeholder="0.00" oninput="calcBudget()"/></div>
+        </div>
+      </div>
+    </div>
+    <div class="section-label">Budget Summary</div>
+    <div class="result-grid">
+      <div class="result-card green"><div class="result-lbl">Total Income</div><div class="result-val" id="br-income">₱0</div><div class="result-sub">Per month</div></div>
+      <div class="result-card red"><div class="result-lbl">Total Expenses</div><div class="result-val" id="br-expense">₱0</div><div class="result-sub">Fixed + variable</div></div>
+      <div class="result-card" id="br-surplus-card"><div class="result-lbl">Surplus / Deficit</div><div class="result-val" id="br-surplus">₱0</div><div class="result-sub" id="br-surplus-sub">Remaining</div></div>
+      <div class="result-card purple"><div class="result-lbl">Savings Rate</div><div class="result-val" id="br-rate">0%</div><div class="result-sub">Of net income</div></div>
+    </div>
+    <div class="progress-wrap" id="br-progress-wrap" style="display:none;margin-top:16px;">
+      <div class="progress-row"><span class="progress-label">Expenses vs Income</span><span class="progress-pct" id="br-pct">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="br-bar" style="width:0%;background:var(--a2);"></div></div>
+    </div>
+    <div class="chart-wrap" id="budget-chart-wrap" style="display:none;"><canvas id="budgetChart"></canvas></div>
+    <div class="tip-box" id="budget-tip" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg><span id="budget-tip-text"></span></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calcBudget()">Calculate</button>
+      <button class="btn btn-ghost" onclick="resetBudget()">Reset</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: PAYSLIP DECODER                           -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-payslip">
+    <div class="section-label" style="margin-top:0;">Payslip Decoder</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(14,165,233,.12);color:var(--a6);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div><div class="card-title-sm">Enter Your Gross Monthly Salary</div><div class="card-subtitle">We'll break down every deduction line by line</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));">
+          <div class="form-group">
+            <label>Basic Monthly Salary (₱)</label>
+            <input type="number" id="ps-salary" placeholder="e.g. 20000" oninput="calcPayslip()"/>
+          </div>
+          <div class="form-group">
+            <label>Monthly Allowances (non-taxable)</label>
+            <input type="number" id="ps-allow" placeholder="e.g. 2000" oninput="calcPayslip()"/>
+            <span class="field-hint">Rice subsidy, de minimis benefits, transport allowance, etc.</span>
+          </div>
+          <div class="form-group">
+            <label>Employment Status</label>
+            <select id="ps-emptype" onchange="calcPayslip()">
+              <option value="private">Private Sector (SSS)</option>
+              <option value="govt">Government (GSIS)</option>
+            </select>
+          </div>
+        </div>
+        <div id="payslip-result" style="display:none;margin-top:18px;">
+          <div class="payslip-grid">
+            <div class="payslip-section">
+              <div class="payslip-section-title income">✅ Earnings</div>
+              <div class="payslip-row"><span>Basic Salary</span><strong id="ps-basic-val">—</strong></div>
+              <div class="payslip-row"><span>Non-Taxable Allowances</span><strong id="ps-allow-val">—</strong></div>
+              <div class="payslip-total"><span>Gross Pay</span><strong id="ps-gross-val" style="color:var(--a2);">—</strong></div>
+            </div>
+            <div class="payslip-section">
+              <div class="payslip-section-title deduct">❌ Mandatory Deductions</div>
+              <div class="payslip-row">
+                <span>SSS / GSIS <span style="font-size:9px;color:var(--muted);">(employee share)</span></span>
+                <strong id="ps-sss-val">—</strong>
+              </div>
+              <div class="payslip-row">
+                <span>PhilHealth <span style="font-size:9px;color:var(--muted);">(employee share)</span></span>
+                <strong id="ps-phil-val">—</strong>
+              </div>
+              <div class="payslip-row">
+                <span>Pag-IBIG / HDMF <span style="font-size:9px;color:var(--muted);">(employee share)</span></span>
+                <strong id="ps-hdmf-val">—</strong>
+              </div>
+              <div class="payslip-row"><span>Withholding Tax <span style="font-size:9px;color:var(--muted);">(est. TRAIN Law)</span></span><strong id="ps-tax-val">—</strong></div>
+              <div class="payslip-total"><span>Total Deductions</span><strong id="ps-deduct-total" style="color:var(--a5);">—</strong></div>
+            </div>
+          </div>
+          <div class="payslip-take-home">
+            <div class="payslip-take-home-label">💰 Estimated Net Take-Home Pay</div>
+            <div class="payslip-take-home-val" id="ps-net">—</div>
+            <div class="payslip-take-home-sub" id="ps-net-pct">—% of gross goes home with you</div>
+          </div>
+          <div class="tip-box" style="margin-top:12px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span><strong>Why is my take-home lower than my salary?</strong> Mandatory deductions (SSS, PhilHealth, Pag-IBIG, and withholding tax) are required by law. The good news: SSS, PhilHealth, and Pag-IBIG are not "lost money" — they are benefits you can use for sickness, hospitalization, housing loans, and retirement. Think of them as forced savings.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calcPayslip()">Decode Payslip</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('ps-salary').value='';document.getElementById('ps-allow').value='';document.getElementById('payslip-result').style.display='none';">Reset</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: EMERGENCY FUND                            -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-emergency">
+    <div class="section-label" style="margin-top:0;">Emergency Fund Tracker</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(13,148,136,.11);color:var(--a2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div><div class="card-title-sm">Emergency Fund Goal</div><div class="card-subtitle">Experts recommend 3–6 months of living expenses in a liquid account</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group"><label>Monthly Living Expenses</label><input type="number" id="ef-monthly" placeholder="0.00" oninput="calcEF()"/></div>
+          <div class="form-group">
+            <label>Target Coverage (months)</label>
+            <select id="ef-months" onchange="calcEF()">
+              <option value="3">3 months (minimum)</option>
+              <option value="4">4 months</option>
+              <option value="5">5 months</option>
+              <option value="6" selected>6 months (recommended)</option>
+              <option value="9">9 months (conservative)</option>
+              <option value="12">12 months (aggressive)</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Current Savings / Cash on Hand</label><input type="number" id="ef-current" placeholder="0.00" oninput="calcEF()"/></div>
+          <div class="form-group"><label>Monthly Amount You Can Save</label><input type="number" id="ef-monthly-save" placeholder="0.00" oninput="calcEF()"/></div>
+        </div>
+        <div class="result-grid" style="margin-top:14px;">
+          <div class="result-card green"><div class="result-lbl">Target Fund</div><div class="result-val" id="ef-target">₱0</div><div class="result-sub" id="ef-target-sub">6-month goal</div></div>
+          <div class="result-card sky"><div class="result-lbl">Current Savings</div><div class="result-val" id="ef-saved">₱0</div><div class="result-sub">Already set aside</div></div>
+          <div class="result-card amber"><div class="result-lbl">Still Needed</div><div class="result-val" id="ef-gap">₱0</div><div class="result-sub">Gap to close</div></div>
+          <div class="result-card purple"><div class="result-lbl">Months to Goal</div><div class="result-val" id="ef-eta">—</div><div class="result-sub" id="ef-eta-sub">At current rate</div></div>
+        </div>
+        <div class="progress-wrap" style="margin-top:16px;">
+          <div class="progress-row"><span class="progress-label">Progress toward goal</span><span class="progress-pct" id="ef-pct">0%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="ef-bar" style="width:0%;background:var(--a2);"></div></div>
+        </div>
+        <div class="tip-box" style="margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg><span><strong>Where to keep it:</strong> Liquid, low-risk account — not stocks. Best options: Tonik (up to 6%), Maya, ING, or UnionBank high-yield savings. Never invest your emergency fund.</span></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calcEF()">Calculate</button>
+      <button class="btn btn-ghost" onclick="resetEF()">Reset</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: MP2 PROJECTOR                             -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-mp2">
+    <div class="section-label" style="margin-top:0;">PAG-IBIG MP2 Savings Projector</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(13,148,136,.11);color:var(--a2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div><div class="card-title-sm">Modified Pag-IBIG II (MP2)</div><div class="card-subtitle">Government-backed, tax-free dividends — 5-year lock-in, re-enrollable</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Existing MP2 Balance (Starting Capital)</label>
+            <input type="number" id="mp2-capital" placeholder="0.00" oninput="calcMP2()"/>
+            <span class="field-hint green">Already invested? Enter current balance here (e.g. ₱90,000).</span>
+          </div>
+          <div class="form-group">
+            <label>Monthly Contribution (₱500 min.)</label>
+            <input type="number" id="mp2-monthly" placeholder="500" min="500" oninput="calcMP2()"/>
+          </div>
+          <div class="form-group">
+            <label>Saving Period (years) — any number 1–40</label>
+            <input type="number" id="mp2-years" placeholder="e.g. 27" min="1" max="40" value="5" oninput="calcMP2()"/>
+            <span class="field-hint">MP2 is 5-year but you can re-enroll continuously.</span>
+          </div>
+          <div class="form-group">
+            <label>Dividend Reinvested?</label>
+            <select id="mp2-reinvest" onchange="calcMP2()">
+              <option value="yes">Yes — compound growth</option>
+              <option value="no">No — dividends paid out annually</option>
+            </select>
+          </div>
+        </div>
+        <div class="section-label" style="margin-top:18px;margin-bottom:12px;">Projected Returns</div>
+        <div class="result-grid">
+          <div class="result-card"><div class="result-lbl">Total Money In</div><div class="result-val" id="mp2-principal">₱0</div><div class="result-sub">Capital + contributions</div></div>
+          <div class="result-card amber"><div class="result-lbl">Conservative (5%)</div><div class="result-val" id="mp2-cons">₱0</div><div class="result-sub" id="mp2-cons-earn">+₱0 dividends</div></div>
+          <div class="result-card green"><div class="result-lbl">Base (7.03% avg)</div><div class="result-val" id="mp2-base">₱0</div><div class="result-sub" id="mp2-base-earn">+₱0 dividends</div></div>
+          <div class="result-card purple"><div class="result-lbl">Optimistic (9%)</div><div class="result-val" id="mp2-opt">₱0</div><div class="result-sub" id="mp2-opt-earn">+₱0 dividends</div></div>
+        </div>
+        <div class="chart-wrap"><canvas id="mp2Chart"></canvas></div>
+        <div class="tip-box" style="margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span><strong>Why MP2?</strong> Dividends are tax-free and average 6–9%/year. Minimum ₱500/month. You can open multiple accounts. Available to all Pag-IBIG members.</span></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calcMP2()">Calculate</button>
+      <button class="btn btn-ghost" onclick="resetMP2()">Reset</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: SSS PENSION                               -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-sss">
+    <div class="section-label" style="margin-top:0;">SSS Monthly Pension Estimator</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(124,58,237,.11);color:var(--a4);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+        <div><div class="card-title-sm">SSS Retirement Pension</div><div class="card-subtitle">Estimated monthly benefit using the official SSS formula</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group"><label>Current Age</label><input type="number" id="sss-age" placeholder="e.g. 30" min="18" max="64" oninput="calcSSS()"/></div>
+          <div class="form-group">
+            <label>Retirement Age</label>
+            <select id="sss-retire" onchange="calcSSS()">
+              <option value="60">60 (optional retirement)</option>
+              <option value="65" selected>65 (mandatory retirement)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Years Working / Paying SSS So Far</label>
+            <input type="number" id="sss-cys" placeholder="e.g. 5" min="1" oninput="calcSSS()"/>
+            <span class="field-hint">How many years have you been employed and paying SSS? Example: Started 2018, now 2025 = 7 years. Check my.SSS.gov.ph → Contributions.</span>
+          </div>
+          <div class="form-group" style="grid-column:1/-1;">
+            <label>Monthly Basic Salary (for MSC calculation)</label>
+            <input type="number" id="sss-salary-input" placeholder="e.g. 18000" oninput="autoCalcMSC()"/>
+            <span class="field-hint">Enter your basic salary — MSC and contribution will be auto-filled from the official SSS table.</span>
+          </div>
+          <div class="form-group">
+            <label>SSS Monthly Salary Credit (MSC) — Auto-Computed</label>
+            <input type="number" id="sss-msc" placeholder="Auto-filled" oninput="calcSSS()" style="border-color:var(--a2);"/>
+            <span class="field-hint green">✅ Auto-filled. You may type manually if you know your exact MSC.</span>
+          </div>
+          <div class="form-group">
+            <label>Monthly SSS Contribution (Employee Share)</label>
+            <input type="number" id="sss-contrib" placeholder="Auto-filled" oninput="calcSSS()"/>
+            <span class="field-hint">Auto-filled from salary, or check your payslip.</span>
+          </div>
+        </div>
+        <div class="result-grid" style="margin-top:14px;">
+          <div class="result-card"><div class="result-lbl">Years to Retirement</div><div class="result-val" id="sss-ytr">—</div><div class="result-sub">Remaining</div></div>
+          <div class="result-card green"><div class="result-lbl">Est. Monthly Pension</div><div class="result-val" id="sss-pension">₱0</div><div class="result-sub">At retirement</div></div>
+          <div class="result-card purple"><div class="result-lbl">Total CYS at Retirement</div><div class="result-val" id="sss-total-cys">—</div><div class="result-sub">Credited years</div></div>
+          <div class="result-card sky"><div class="result-lbl">Total Contributions</div><div class="result-val" id="sss-total-contrib">₱0</div><div class="result-sub">You + employer</div></div>
+        </div>
+        <div class="tip-box" style="margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span><strong>SSS Pension Formula:</strong> Highest of: (a) ₱300 + 20% AMSC + 2% per CYS over 10 years, (b) 40% of AMSC, or (c) ₱1,000 minimum. This is an estimate — check my.SSS.gov.ph for your official record.</span></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calcSSS()">Estimate Pension</button>
+      <button class="btn btn-ghost" onclick="resetSSS()">Reset</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: DEBT PLANNER                              -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-debt">
+    <div class="section-label" style="margin-top:0;">Debt Payoff Planner — Snowball Method</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(225,29,72,.11);color:var(--a5);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+        <div><div class="card-title-sm">Your Debts</div><div class="card-subtitle">Smallest balance gets attacked first — momentum builds with each payoff</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="debt-add-form">
+          <div class="debt-add-title">Add a Debt</div>
+          <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;">
+            <div class="form-group"><label>Debt Name</label><input type="text" id="d-name" placeholder="e.g. Credit Card"/></div>
+            <div class="form-group"><label>Outstanding Balance (₱)</label><input type="number" id="d-balance" placeholder="0.00"/></div>
+            <div class="form-group"><label>Monthly Interest Rate (%)</label><input type="number" id="d-rate" placeholder="e.g. 2" step="0.01"/></div>
+            <div class="form-group"><label>Min. Monthly Payment (₱)</label><input type="number" id="d-minpay" placeholder="0.00"/></div>
+          </div>
+          <div class="btn-row" style="margin-top:10px;"><button class="btn btn-success" onclick="addDebt()">+ Add Debt</button></div>
+        </div>
+        <div id="debt-list-wrap" style="display:none;margin-top:14px;">
+          <div class="debt-add-title">Your Debt List (Snowball Order — smallest first)</div>
+          <table class="debt-table">
+            <thead><tr><th>#</th><th>Debt</th><th>Balance</th><th>Rate/mo</th><th>Min Pay</th><th>Est. Payoff</th><th></th></tr></thead>
+            <tbody id="debt-tbody"></tbody>
+          </table>
+        </div>
+        <div class="form-group" style="max-width:240px;margin-top:14px;">
+          <label>Extra Monthly Payment (₱)</label>
+          <input type="number" id="d-extra" placeholder="0.00" oninput="calcDebt()"/>
+          <span class="field-hint">Any extra peso goes to the smallest debt first — snowball power.</span>
+        </div>
+        <div class="result-grid" id="debt-results" style="display:none;margin-top:12px;">
+          <div class="result-card red"><div class="result-lbl">Total Debt</div><div class="result-val" id="dr-total">₱0</div></div>
+          <div class="result-card amber"><div class="result-lbl">Total Monthly Payment</div><div class="result-val" id="dr-minpay">₱0</div></div>
+          <div class="result-card green"><div class="result-lbl">Debt-Free In</div><div class="result-val" id="dr-eta">—</div><div class="result-sub" id="dr-eta-sub"></div></div>
+          <div class="result-card purple"><div class="result-lbl">Total Interest Cost</div><div class="result-val" id="dr-interest">₱0</div></div>
+        </div>
+        <div class="tip-box" style="margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg><span><strong>Snowball Method:</strong> Pay minimums on all debts, throw every extra peso at the smallest balance. Once cleared, roll that payment to the next. Builds momentum. For lowest total interest, use <em>avalanche</em> (highest rate first) — but snowball wins on motivation.</span></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calcDebt()">Calculate Payoff</button>
+      <button class="btn btn-ghost" onclick="clearDebts()">Clear All</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: BONUS ALLOCATOR (13th Month)              -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-bonus">
+    <div class="section-label" style="margin-top:0;">13th Month & Bonus Allocator</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(215,119,6,.12);color:var(--a3);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <div><div class="card-title-sm">Smart Bonus Allocation</div><div class="card-subtitle">Don't spend it all — make your bonus work for your future</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Bonus / 13th Month Amount (₱)</label>
+            <input type="number" id="bn-amount" placeholder="e.g. 25000" oninput="calcBonus()"/>
+          </div>
+          <div class="form-group">
+            <label>Do you have outstanding debt?</label>
+            <select id="bn-has-debt" onchange="calcBonus()">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Emergency Fund Status</label>
+            <select id="bn-ef-status" onchange="calcBonus()">
+              <option value="none">Not started yet</option>
+              <option value="partial">Partially built</option>
+              <option value="done">Fully funded ✅</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Are you investing? (MP2, stocks, etc.)</label>
+            <select id="bn-investing" onchange="calcBonus()">
+              <option value="no">Not yet</option>
+              <option value="yes">Yes, already investing</option>
+            </select>
+          </div>
+        </div>
+        <div id="bonus-result" style="display:none;margin-top:18px;">
+          <div class="section-label" style="margin-top:0;margin-bottom:10px;">Recommended Allocation</div>
+          <div class="alloc-bar" id="alloc-bar"></div>
+          <div class="alloc-legend" id="alloc-legend"></div>
+          <div class="result-grid" id="bonus-result-cards" style="margin-top:14px;"></div>
+          <div class="tip-box amber" style="margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="bonus-tip-text"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-amber" onclick="calcBonus()">Allocate My Bonus</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('bn-amount').value='';document.getElementById('bonus-result').style.display='none';">Reset</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: GOAL TRACKER                              -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-goals">
+    <div class="section-label" style="margin-top:0;">Financial Goal Tracker</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(14,165,233,.12);color:var(--a6);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+        <div><div class="card-title-sm">Add a Financial Goal</div><div class="card-subtitle">House, car, travel, tuition, gadget — give every peso a purpose</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group"><label>Goal Name</label><input type="text" id="goal-name" placeholder="e.g. Japan Trip"/></div>
+          <div class="form-group"><label>Target Amount (₱)</label><input type="number" id="goal-target" placeholder="0.00"/></div>
+          <div class="form-group"><label>Already Saved (₱)</label><input type="number" id="goal-saved" placeholder="0.00"/></div>
+          <div class="form-group"><label>Monthly Savings for This Goal (₱)</label><input type="number" id="goal-monthly" placeholder="0.00"/></div>
+          <div class="form-group">
+            <label>Goal Category</label>
+            <select id="goal-cat">
+              <option value="🏠">🏠 Home / Housing</option>
+              <option value="🚗">🚗 Vehicle</option>
+              <option value="✈️">✈️ Travel</option>
+              <option value="📚">📚 Education / Tuition</option>
+              <option value="💊">💊 Health / Medical</option>
+              <option value="📱">📱 Gadget / Tech</option>
+              <option value="👪">👪 Family</option>
+              <option value="💰">💰 Business / Investment</option>
+              <option value="🎯">🎯 Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:12px;"><button class="btn btn-success" onclick="addGoal()">+ Add Goal</button></div>
+        <div id="goals-list" class="goals-list" style="margin-top:16px;"></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="clearGoals()">Clear All Goals</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: SALARY RAISE PROJECTOR                    -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-salary">
+    <div class="section-label" style="margin-top:0;">Salary Increase Projector</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(37,99,235,.12);color:var(--a1);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
+        <div><div class="card-title-sm">What Happens If I Get a Raise?</div><div class="card-subtitle">See the real long-term impact of a salary increase on your wealth</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group"><label>Current Monthly Basic Salary (₱)</label><input type="number" id="sal-current" placeholder="e.g. 20000" oninput="calcSalary()"/></div>
+          <div class="form-group"><label>Expected Raise (%)</label><input type="number" id="sal-raise" placeholder="e.g. 10" oninput="calcSalary()"/></div>
+          <div class="form-group"><label>Current Savings Rate (%)</label><input type="number" id="sal-saverate" placeholder="e.g. 20" oninput="calcSalary()"/></div>
+          <div class="form-group"><label>Years to Project</label><input type="number" id="sal-years" placeholder="e.g. 10" value="10" oninput="calcSalary()"/></div>
+          <div class="form-group"><label>Annual Raise Frequency</label>
+            <select id="sal-freq" onchange="calcSalary()">
+              <option value="1">Every year</option>
+              <option value="2">Every 2 years</option>
+              <option value="3">Every 3 years</option>
+              <option value="0">One-time raise only</option>
+            </select>
+          </div>
+          <div class="form-group"><label>MP2 Contribution Increase with Raise?</label>
+            <select id="sal-mp2" onchange="calcSalary()">
+              <option value="yes">Yes — increase MP2 contributions</option>
+              <option value="no">No — keep same MP2 amount</option>
+            </select>
+          </div>
+        </div>
+        <div id="salary-results" style="display:none;margin-top:14px;">
+          <div class="result-grid">
+            <div class="result-card"><div class="result-lbl">Current Net Salary</div><div class="result-val" id="sal-net-now">₱0</div></div>
+            <div class="result-card green"><div class="result-lbl">New Net Salary (after raise)</div><div class="result-val" id="sal-net-new">₱0</div></div>
+            <div class="result-card amber"><div class="result-lbl">Monthly Increase</div><div class="result-val" id="sal-monthly-inc">₱0</div></div>
+            <div class="result-card purple"><div class="result-lbl">Annual Extra Earnings</div><div class="result-val" id="sal-annual-inc">₱0</div></div>
+          </div>
+          <div class="section-label" style="margin-top:18px;margin-bottom:10px;">Projected Savings Scenarios Over <span id="sal-years-label">10</span> Years</div>
+          <div class="scenario-grid" id="sal-scenarios"></div>
+          <div class="chart-wrap"><canvas id="salaryChart"></canvas></div>
+        </div>
+        <div class="tip-box" style="margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg><span><strong>Golden rule of raises:</strong> When your income increases, increase your savings rate <em>before</em> increasing your lifestyle. Even just routing 50% of your raise into MP2 or investments can dramatically accelerate wealth-building.</span></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calcSalary()">Project My Raise</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('sal-current').value='';document.getElementById('sal-raise').value='';document.getElementById('salary-results').style.display='none';">Reset</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: EARLY VS LATE (COMPARISON)                -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-compare">
+    <div class="section-label" style="margin-top:0;">Early Starter vs Late Starter — MP2 / Investing Comparison</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(13,148,136,.11);color:var(--a2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></div>
+        <div><div class="card-title-sm">What If I Started Earlier?</div><div class="card-subtitle">The numbers are shocking — and the best argument for starting today</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid">
+          <div class="form-group"><label>Monthly Contribution (₱)</label><input type="number" id="cmp-monthly" placeholder="500" value="500" oninput="calcCompare()"/></div>
+          <div class="form-group"><label>Annual Return Rate (%)</label><input type="number" id="cmp-rate" placeholder="7.03" value="7.03" oninput="calcCompare()"/></div>
+          <div class="form-group"><label>Early Starter Age</label><input type="number" id="cmp-age-early" placeholder="25" value="25" oninput="calcCompare()"/></div>
+          <div class="form-group"><label>Late Starter Age</label><input type="number" id="cmp-age-late" placeholder="35" value="35" oninput="calcCompare()"/></div>
+          <div class="form-group"><label>Retirement Age</label><input type="number" id="cmp-retire" placeholder="65" value="65" oninput="calcCompare()"/></div>
+        </div>
+        <div id="compare-results" style="margin-top:16px;">
+          <div class="compare-grid">
+            <div class="compare-card" id="cmp-card-early">
+              <div class="compare-age" id="cmp-label-early">Started at 25</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;" id="cmp-years-early">40 years investing</div>
+              <div class="compare-val" id="cmp-val-early">₱0</div>
+              <div class="compare-gain" id="cmp-gain-early" style="color:var(--a2);">+₱0 in dividends</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:6px;" id="cmp-contrib-early">Total invested: ₱0</div>
+            </div>
+            <div class="compare-card" id="cmp-card-late">
+              <div class="compare-age" id="cmp-label-late">Started at 35</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;" id="cmp-years-late">30 years investing</div>
+              <div class="compare-val" id="cmp-val-late">₱0</div>
+              <div class="compare-gain" id="cmp-gain-late" style="color:var(--a5);">+₱0 in dividends</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:6px;" id="cmp-contrib-late">Total invested: ₱0</div>
+            </div>
+          </div>
+          <div class="compare-diff" id="cmp-diff">Enter values above to see the difference.</div>
+          <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
+        </div>
+        <div class="tip-box" style="margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span><strong>The most powerful force in finance is compound interest over time.</strong> Starting 10 years earlier — even with the same monthly amount — can result in 2x to 3x more wealth at retirement. The best time to start was yesterday. The second best time is today.</span></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calcCompare()">Compare</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: SAVINGS HABIT TRACKER                     -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-habit">
+    <div class="section-label" style="margin-top:0;">Savings Habit Tracker</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(13,148,136,.11);color:var(--a2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div><div class="card-title-sm">Monthly Savings Habit — <span id="habit-year">2025</span></div><div class="card-subtitle">Track whether you saved this month — build the habit, build the streak</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:14px;">
+          <div class="form-group">
+            <label>Year</label>
+            <select id="habit-year-sel" onchange="renderHabit()"></select>
+          </div>
+          <div class="form-group">
+            <label>Monthly Savings Target (₱)</label>
+            <input type="number" id="habit-target" placeholder="e.g. 2000" oninput="renderHabit()"/>
+          </div>
+        </div>
+        <div class="habit-month-labels" id="habit-month-labels"></div>
+        <div class="habit-grid" id="habit-grid"></div>
+        <div class="habit-streak">
+          <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">Current streak:</div>
+          <strong id="habit-streak">0 months</strong>
+          <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-left:16px;">Best streak:</div>
+          <strong id="habit-best">0 months</strong>
+          <div style="font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-left:16px;">Saved this year:</div>
+          <strong id="habit-count" style="color:var(--a2);">0 / 12 months</strong>
+        </div>
+        <div class="tip-box" style="margin-top:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg><span><strong>How to use:</strong> Click a month cell to mark it as ✅ Saved (green), 🟡 Partial (amber), or ⬜ Missed (empty). Data is saved automatically in your browser. Build your streak — consistency beats amount every time.</span></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="clearHabit()">Clear This Year</button>
+      <button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: INVEST 101                                -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-invest">
+    <div class="section-label" style="margin-top:0;">Investment Options for Filipino Employees</div>
+    <div class="notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>General education guide only — not financial advice. All investments carry risk. Do your own research.</span></div>
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header-bar"><div class="card-icon-sm" style="background:rgba(37,99,235,.12);color:var(--a1);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div><div class="card-title-sm">Invest in This Order</div><div class="card-subtitle">Build your foundation before chasing returns</div></div></div>
+      <div class="card-body-pad">
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:flex-start;gap:12px;padding:10px;background:var(--stat-bg);border-radius:8px;border:1px solid var(--border);"><div style="width:26px;height:26px;border-radius:50%;background:rgba(37,99,235,.15);color:var(--a1);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div><div><div style="font-size:12px;font-weight:700;color:var(--text);">Emergency Fund first (3–6 months expenses)</div><div style="font-size:11px;color:var(--text-sec);margin-top:2px;">Non-negotiable safety net before any investment.</div></div></div>
+          <div style="display:flex;align-items:flex-start;gap:12px;padding:10px;background:var(--stat-bg);border-radius:8px;border:1px solid var(--border);"><div style="width:26px;height:26px;border-radius:50%;background:rgba(13,148,136,.15);color:var(--a2);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div><div><div style="font-size:12px;font-weight:700;color:var(--text);">Max out MP2 — tax-free 6–9% returns</div><div style="font-size:11px;color:var(--text-sec);margin-top:2px;">Best risk-adjusted return available to Philippine employees.</div></div></div>
+          <div style="display:flex;align-items:flex-start;gap:12px;padding:10px;background:var(--stat-bg);border-radius:8px;border:1px solid var(--border);"><div style="width:26px;height:26px;border-radius:50%;background:rgba(215,119,6,.15);color:var(--a3);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div><div><div style="font-size:12px;font-weight:700;color:var(--text);">Pay off high-interest debt (credit cards first)</div><div style="font-size:11px;color:var(--text-sec);margin-top:2px;">3% monthly interest = 36% guaranteed annual return when eliminated.</div></div></div>
+          <div style="display:flex;align-items:flex-start;gap:12px;padding:10px;background:var(--stat-bg);border-radius:8px;border:1px solid var(--border);"><div style="width:26px;height:26px;border-radius:50%;background:rgba(124,58,237,.15);color:var(--a4);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div><div><div style="font-size:12px;font-weight:700;color:var(--text);">Invest for long-term wealth (UITF, stocks, REIT)</div><div style="font-size:11px;color:var(--text-sec);margin-top:2px;">Only invest money you won't need for 5+ years. Start small, stay consistent.</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="section-label" style="margin-top:8px;">Investment Options at a Glance</div>
+    <div class="invest-grid">
+      <div class="invest-card ic2"><div class="invest-name">PAG-IBIG MP2</div><div class="risk-badge risk-low">Low Risk</div><div class="invest-rows"><div class="invest-row"><span>Min. Investment</span><strong>₱500/month</strong></div><div class="invest-row"><span>Target Return</span><strong>6–9% p.a.</strong></div><div class="invest-row"><span>Lock-in</span><strong>5 years (re-enrollable)</strong></div><div class="invest-row"><span>Tax on Gains</span><strong>None ✅</strong></div></div><div class="invest-desc">Safest & best return for employees. Government-backed, tax-free. Use the MP2 tab to project your gains.</div></div>
+      <div class="invest-card ic3"><div class="invest-name">Cooperatives</div><div class="risk-badge risk-low">Low–Med Risk</div><div class="invest-rows"><div class="invest-row"><span>Min. Investment</span><strong>Varies (₱1,000+)</strong></div><div class="invest-row"><span>Target Return</span><strong>5–12% p.a.</strong></div><div class="invest-row"><span>Lock-in</span><strong>Membership-based</strong></div><div class="invest-row"><span>Tax on Gains</span><strong>None (registered)</strong></div></div><div class="invest-desc">Check if MMC has an employee cooperative. Community-based, regular dividends, often better rates than banks.</div></div>
+      <div class="invest-card ic1"><div class="invest-name">UITF (Unit Investment Trust Fund)</div><div class="risk-badge risk-med">Low–High Risk</div><div class="invest-rows"><div class="invest-row"><span>Min. Investment</span><strong>₱1,000–₱10,000</strong></div><div class="invest-row"><span>Target Return</span><strong>3–15%+ (by type)</strong></div><div class="invest-row"><span>Lock-in</span><strong>None (liquid)</strong></div><div class="invest-row"><span>Tax on Gains</span><strong>None (TRAIN Law)</strong></div></div><div class="invest-desc"><strong>Types:</strong> Money Market (~3%), Bond (~5%), Balanced (~7%), Equity (10–15%+). Available at BDO, BPI, Metrobank. Great for beginners — diversified, professionally managed.</div></div>
+      <div class="invest-card ic4"><div class="invest-name">PSE Stocks / FMETF</div><div class="risk-badge risk-high">High Risk</div><div class="invest-rows"><div class="invest-row"><span>Min. Investment</span><strong>₱1,000 (COL/GInvest)</strong></div><div class="invest-row"><span>Target Return</span><strong>Avg 10–12% long-term</strong></div><div class="invest-row"><span>Lock-in</span><strong>None (sell anytime)</strong></div><div class="invest-row"><span>Tax</span><strong>0.6% stock transaction</strong></div></div><div class="invest-desc">Beginners: start with <strong>FMETF</strong> (index fund tracking the whole PSE). Apps: COL Financial, GInvest. Best for 10+ year horizons only.</div></div>
+      <div class="invest-card ic6"><div class="invest-name">High-Yield Savings (HYSA)</div><div class="risk-badge risk-low">Very Low Risk</div><div class="invest-rows"><div class="invest-row"><span>Min. Investment</span><strong>₱0 (Tonik, Maya)</strong></div><div class="invest-row"><span>Target Return</span><strong>2–7% p.a.</strong></div><div class="invest-row"><span>Lock-in</span><strong>None (liquid)</strong></div><div class="invest-row"><span>Tax on Gains</span><strong>20% final tax</strong></div></div><div class="invest-desc">Tonik (up to 6%), Maya (up to 15% promo), ING, UnionBank. Ideal for emergency fund and short-term goals. Far better than traditional savings accounts.</div></div>
+      <div class="invest-card ic5"><div class="invest-name">REITs (Real Estate)</div><div class="risk-badge risk-med">Medium Risk</div><div class="invest-rows"><div class="invest-row"><span>Min. Investment</span><strong>₱1,000 via PSE</strong></div><div class="invest-row"><span>Target Return</span><strong>5–8% dividend yield</strong></div><div class="invest-row"><span>Lock-in</span><strong>None (listed stocks)</strong></div><div class="invest-row"><span>Tax on Dividends</span><strong>10%</strong></div></div><div class="invest-desc">Own a share of malls & offices for ₱1,000. Examples: AREIT, MREIT, DDMPR, FILRT. Regular quarterly dividends. Great real-estate exposure without buying property.</div></div>
+    </div>
+    <div class="tip-box" style="margin-top:18px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg><span><strong>Simple Beginner Portfolio:</strong> 40% MP2 + 30% Equity UITF + 20% Cooperative + 10% HYSA (liquid). Automate contributions every payday. Pay yourself first — before any spending.</span></div>
+    <div class="btn-row"><button class="btn btn-pdf" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Save as PDF</button></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- TAB: FINANCIAL LITERACY QUIZ                   -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="tab-pane" id="pane-quiz">
+    <div class="section-label" style="margin-top:0;">Financial Literacy Quiz</div>
+    <div class="card">
+      <div class="card-header-bar">
+        <div class="card-icon-sm" style="background:rgba(124,58,237,.11);color:var(--a4);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div><div class="card-title-sm">Test Your Financial Knowledge</div><div class="card-subtitle">10 questions — see where you stand and what to learn next</div></div>
+      </div>
+      <div class="card-body-pad">
+        <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quiz-progress" style="width:0%;"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Question <span id="quiz-q-num">1</span> of 10</div>
+        <div id="quiz-container"></div>
+        <div class="quiz-score-box" id="quiz-score-box">
+          <div class="quiz-score-big" id="quiz-score-big">0/10</div>
+          <div class="quiz-score-label">Financial Literacy Score</div>
+          <div class="quiz-score-grade" id="quiz-score-grade"></div>
+          <div class="quiz-score-msg" id="quiz-score-msg"></div>
+          <div class="btn-row" style="justify-content:center;margin-top:16px;">
+            <button class="btn btn-primary" onclick="restartQuiz()">Retake Quiz</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  CREG Financial Planner v2 &nbsp;·&nbsp; Makati Medical Center &nbsp;·&nbsp; For staff education purposes only &nbsp;·&nbsp; <span id="footerYear"></span>
+</footer>
+
+<script>
+/* ══ CLOCK ══ */
+function tick(){const n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});document.getElementById('footerYear').textContent=n.getFullYear();}
+tick();setInterval(tick,1000);
+
+/* ══ THEME ══ */
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('btnDark').classList.toggle('active',t==='dark');document.getElementById('btnLight').classList.toggle('active',t==='light');try{localStorage.setItem('creg_theme',t);}catch(e){}}
+(function(){try{const s=localStorage.getItem('creg_theme');if(s==='light')setTheme('light');}catch(e){}})();
+
+/* ══ TABS ══ */
+function switchTab(id){document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('pane-'+id).classList.add('active');document.getElementById('tab-'+id).classList.add('active');}
+
+/* ══ FORMATTING ══ */
+const fmt=n=>isNaN(n)||n===null?'₱0':'₱'+Math.round(n).toLocaleString('en-PH');
+const v=id=>parseFloat(document.getElementById(id).value)||0;
+
+/* ══════════════════════════════════════════════════
+   BUDGET PLANNER
+══════════════════════════════════════════════════ */
+let budgetChartInst=null;
+function calcBudget(){
+  const net=v('b-net')||v('b-gross')*0.85;
+  const totalIncome=(net||v('b-gross'))+v('b-other')+v('b-allow');
+  const fixedTotal=v('b-rent')+v('b-util')+v('b-inet')+v('b-trans')+v('b-loan')+v('b-ins');
+  const varTotal=v('b-food')+v('b-dining')+v('b-cloth')+v('b-ent')+v('b-health')+v('b-misc');
+  const totalExp=fixedTotal+varTotal;
+  const surplus=totalIncome-totalExp;
+  const rate=totalIncome>0?(surplus/totalIncome)*100:0;
+  document.getElementById('br-income').textContent=fmt(totalIncome);
+  document.getElementById('br-expense').textContent=fmt(totalExp);
+  document.getElementById('br-surplus').textContent=fmt(Math.abs(surplus));
+  const sc=document.getElementById('br-surplus-card');
+  if(surplus>=0){sc.style.borderLeftColor='var(--a2)';document.getElementById('br-surplus').style.color='var(--a2)';document.getElementById('br-surplus-sub').textContent='You have this left ✅';}
+  else{sc.style.borderLeftColor='var(--a5)';document.getElementById('br-surplus').style.color='var(--a5)';document.getElementById('br-surplus-sub').textContent='Deficit ⚠️';}
+  document.getElementById('br-rate').textContent=rate.toFixed(1)+'%';
+  if(totalIncome>0){const pct=Math.min((totalExp/totalIncome)*100,100);document.getElementById('br-progress-wrap').style.display='block';document.getElementById('br-pct').textContent=pct.toFixed(1)+'%';const bar=document.getElementById('br-bar');bar.style.width=pct+'%';bar.style.background=pct>90?'var(--a5)':pct>70?'var(--a3)':'var(--a2)';}
+  const tw=document.getElementById('budget-tip');const tt=document.getElementById('budget-tip-text');
+  if(totalIncome>0){tw.style.display='flex';if(surplus<0)tt.innerHTML='<strong>⚠️ Spending more than you earn.</strong> Cut variable expenses first — dining out, entertainment, clothing.';else if(rate<10)tt.innerHTML='<strong>Savings rate below 10%.</strong> Target 20%+. Even ₱500/month saved = ₱6,000/year.';else if(rate<20)tt.innerHTML='<strong>Good start!</strong> 10–20% savings rate. Automate transfers to savings every payday.';else tt.innerHTML='<strong>Excellent!</strong> '+rate.toFixed(1)+'% savings rate — above the 20% target. Invest the surplus wisely.';}
+  if(totalIncome>0||totalExp>0){document.getElementById('budget-chart-wrap').style.display='block';const ctx=document.getElementById('budgetChart').getContext('2d');if(budgetChartInst)budgetChartInst.destroy();budgetChartInst=new Chart(ctx,{type:'doughnut',data:{labels:['Fixed Expenses','Variable Expenses','Savings/Surplus'],datasets:[{data:[Math.max(0,fixedTotal),Math.max(0,varTotal),Math.max(0,surplus)],backgroundColor:['rgba(225,29,72,.75)','rgba(215,119,6,.75)','rgba(13,148,136,.75)'],borderColor:['#e11d48','#d97706','#0d9488'],borderWidth:2}]},options:{responsive:true,plugins:{legend:{labels:{color:'rgba(160,180,210,.85)',font:{family:'Plus Jakarta Sans',size:11}}},tooltip:{callbacks:{label:c=>{const s=c.dataset.data.reduce((a,b)=>a+b,0);return ` ${c.label}: ₱${c.parsed.toLocaleString()} (${s>0?((c.parsed/s)*100).toFixed(1):0}%)`;}}}}}});}
+}
+function resetBudget(){['b-gross','b-net','b-other','b-allow','b-rent','b-util','b-inet','b-trans','b-loan','b-ins','b-food','b-dining','b-cloth','b-ent','b-health','b-misc'].forEach(id=>document.getElementById(id).value='');['br-income','br-expense','br-surplus'].forEach(id=>document.getElementById(id).textContent='₱0');document.getElementById('br-rate').textContent='0%';document.getElementById('br-progress-wrap').style.display='none';document.getElementById('budget-chart-wrap').style.display='none';document.getElementById('budget-tip').style.display='none';if(budgetChartInst){budgetChartInst.destroy();budgetChartInst=null;}}
+
+/* ══════════════════════════════════════════════════
+   PAYSLIP DECODER
+══════════════════════════════════════════════════ */
+function calcPayslip(){
+  const salary=v('ps-salary');
+  const allow=v('ps-allow');
+  if(!salary)return;
+  // SSS contribution table (2023 schedule)
+  const sssTable=[[0,4000,180],[4250,4500,202.5],[4750,5000,225],[5250,5500,247.5],[5750,6000,270],[6250,6500,292.5],[6750,7000,315],[7250,7500,337.5],[7750,8000,360],[8250,8500,382.5],[8750,9000,405],[9250,9500,427.5],[9750,10000,450],[10250,10500,472.5],[10750,11000,495],[11250,11500,517.5],[11750,12000,540],[12250,12500,562.5],[12750,13000,585],[13250,13500,607.5],[13750,14000,630],[14250,14500,652.5],[14750,15000,675],[15250,15500,697.5],[15750,16000,720],[16250,16500,742.5],[16750,17000,765],[17250,17500,787.5],[17750,18000,810],[18250,18500,832.5],[18750,19000,855],[19250,19500,877.5],[19750,20000,900],[20250,20500,922.5],[20750,21000,945],[21250,21500,967.5],[21750,22000,990],[22250,22500,1012.5],[22750,23000,1035],[23250,23500,1057.5],[23750,24000,1080],[24250,24500,1102.5],[24750,25000,1125],[25250,25500,1147.5],[25750,26000,1170],[26250,26500,1192.5],[26750,27000,1215],[27250,27500,1237.5],[27750,28000,1260],[28250,28500,1282.5],[28750,29000,1305],[29250,29500,1327.5],[29750,30000,1350]];
+  let sssMatch=sssTable[sssTable.length-1];
+  for(let i=0;i<sssTable.length;i++){if(salary<(sssTable[i+1]?sssTable[i+1][0]:Infinity)){sssMatch=sssTable[i];break;}}
+  const emptype=document.getElementById('ps-emptype').value;
+  const sss=emptype==='private'?sssMatch[2]:salary*0.09; // GSIS: ~9% employee share
+  const philhealth=Math.min(Math.max(salary*0.05,500),5000)/2; // 5% shared equally, min ₱500, max ₱5000 total
+  const hdmf=Math.min(salary*0.02,100); // Pag-IBIG: 2% of salary, max ₱100 employee
+  // Withholding Tax (TRAIN Law 2023 — monthly brackets)
+  const taxableIncome=salary-sss-philhealth-hdmf;
+  let tax=0;
+  if(taxableIncome<=20833)tax=0;
+  else if(taxableIncome<=33332)tax=(taxableIncome-20833)*0.15;
+  else if(taxableIncome<=66666)tax=2500+(taxableIncome-33333)*0.20;
+  else if(taxableIncome<=166666)tax=10833+(taxableIncome-66667)*0.25;
+  else if(taxableIncome<=666666)tax=40833.33+(taxableIncome-166667)*0.30;
+  else tax=200833.33+(taxableIncome-666667)*0.35;
+  const totalDeduct=sss+philhealth+hdmf+tax;
+  const gross=salary+allow;
+  const net=gross-totalDeduct;
+  document.getElementById('ps-basic-val').textContent=fmt(salary);
+  document.getElementById('ps-allow-val').textContent=fmt(allow);
+  document.getElementById('ps-gross-val').textContent=fmt(gross);
+  document.getElementById('ps-sss-val').textContent=fmt(sss);
+  document.getElementById('ps-phil-val').textContent=fmt(philhealth);
+  document.getElementById('ps-hdmf-val').textContent=fmt(hdmf);
+  document.getElementById('ps-tax-val').textContent=fmt(tax);
+  document.getElementById('ps-deduct-total').textContent=fmt(totalDeduct);
+  document.getElementById('ps-net').textContent=fmt(net);
+  document.getElementById('ps-net-pct').textContent=(gross>0?((net/gross)*100).toFixed(1):0)+'% of gross goes home with you';
+  document.getElementById('payslip-result').style.display='block';
+}
+
+/* ══════════════════════════════════════════════════
+   EMERGENCY FUND
+══════════════════════════════════════════════════ */
+function calcEF(){
+  const monthly=v('ef-monthly'),months=parseInt(document.getElementById('ef-months').value)||6,current=v('ef-current'),monthlySave=v('ef-monthly-save');
+  const target=monthly*months,gap=Math.max(0,target-current),eta=(monthlySave>0&&gap>0)?Math.ceil(gap/monthlySave):(gap===0?0:null),pct=target>0?Math.min((current/target)*100,100):0;
+  document.getElementById('ef-target').textContent=fmt(target);document.getElementById('ef-target-sub').textContent=months+'-month goal';document.getElementById('ef-saved').textContent=fmt(current);document.getElementById('ef-gap').textContent=fmt(gap);document.getElementById('ef-pct').textContent=pct.toFixed(1)+'%';
+  const bar=document.getElementById('ef-bar');bar.style.width=pct+'%';bar.style.background=pct>=100?'var(--a2)':pct>=50?'var(--a3)':'var(--a5)';
+  if(gap===0){document.getElementById('ef-eta').textContent='✅ Done!';document.getElementById('ef-eta-sub').textContent='Goal achieved!';}
+  else if(eta!==null){document.getElementById('ef-eta').textContent=eta<12?eta+'m':Math.floor(eta/12)+'y '+(eta%12)+'m';document.getElementById('ef-eta-sub').textContent='At ₱'+monthlySave.toLocaleString()+'/month';}
+  else{document.getElementById('ef-eta').textContent='—';document.getElementById('ef-eta-sub').textContent='Enter monthly savings';}
+}
+function resetEF(){['ef-monthly','ef-current','ef-monthly-save'].forEach(id=>document.getElementById(id).value='');calcEF();}
+
+/* ══════════════════════════════════════════════════
+   MP2 PROJECTOR
+══════════════════════════════════════════════════ */
+let mp2ChartInst=null;
+function calcMP2(){
+  const capital=v('mp2-capital'),monthly=Math.max(v('mp2-monthly')||500,500),years=Math.min(40,Math.max(1,parseInt(document.getElementById('mp2-years').value)||5)),reinvest=document.getElementById('mp2-reinvest').value==='yes';
+  const rates={cons:.05,base:.0703,opt:.09},newContribs=monthly*12*years,principal=capital+newContribs;
+  function project(rate){if(reinvest){let b=capital;for(let y=0;y<years;y++)for(let m=0;m<12;m++){b+=monthly;b*=(1+rate/12);}return b;}else{return principal+capital*rate*years+newContribs*rate*years/2;}}
+  const cons=project(rates.cons),base=project(rates.base),opt=project(rates.opt);
+  document.getElementById('mp2-principal').textContent=fmt(principal);
+  document.getElementById('mp2-cons').textContent=fmt(cons);document.getElementById('mp2-cons-earn').textContent='+'+fmt(cons-principal)+' dividends';
+  document.getElementById('mp2-base').textContent=fmt(base);document.getElementById('mp2-base-earn').textContent='+'+fmt(base-principal)+' dividends';
+  document.getElementById('mp2-opt').textContent=fmt(opt);document.getElementById('mp2-opt-earn').textContent='+'+fmt(opt-principal)+' dividends';
+  const labels=Array.from({length:years},(_,i)=>'Y'+(i+1)),principalByYear=labels.map((_,i)=>capital+monthly*12*(i+1));
+  function yrProject(rate){let arr=[],b=capital;for(let y=0;y<years;y++){if(reinvest){for(let m=0;m<12;m++){b+=monthly;b*=(1+rate/12);}}else{b=capital*(1+rate*(y+1))+monthly*12*(y+1)+monthly*12*(y+1)*rate*(y+1)/2;}arr.push(Math.round(b));}return arr;}
+  const ctx=document.getElementById('mp2Chart').getContext('2d');if(mp2ChartInst)mp2ChartInst.destroy();
+  mp2ChartInst=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Your Money In',data:principalByYear,backgroundColor:'rgba(37,99,235,.5)',borderColor:'#2563eb',borderWidth:1.5,borderRadius:3},{label:'Conservative 5%',data:yrProject(rates.cons),type:'line',borderColor:'#d97706',borderWidth:2,fill:false,tension:.3,pointRadius:0},{label:'Base 7.03%',data:yrProject(rates.base),type:'line',borderColor:'#0d9488',borderWidth:2.5,fill:false,tension:.3,pointRadius:0},{label:'Optimistic 9%',data:yrProject(rates.opt),type:'line',borderColor:'#7c3aed',borderWidth:2,fill:false,tension:.3,pointRadius:0}]},options:{responsive:true,plugins:{legend:{labels:{color:'rgba(160,180,210,.85)',font:{family:'Plus Jakarta Sans',size:11}}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': ₱'+c.parsed.y.toLocaleString()}}},scales:{x:{ticks:{color:'rgba(160,180,210,.7)',font:{size:10}},grid:{color:'rgba(37,99,235,.06)'}},y:{ticks:{color:'rgba(160,180,210,.7)',font:{size:10},callback:v=>'₱'+v.toLocaleString()},grid:{color:'rgba(37,99,235,.06)'}}}}});
+}
+function resetMP2(){document.getElementById('mp2-capital').value='';document.getElementById('mp2-monthly').value='';calcMP2();}
+calcMP2();
+
+/* ══════════════════════════════════════════════════
+   SSS AUTO-CALC MSC
+══════════════════════════════════════════════════ */
+const sssTable=[[0,4000,180],[4250,4500,202.5],[4750,5000,225],[5250,5500,247.5],[5750,6000,270],[6250,6500,292.5],[6750,7000,315],[7250,7500,337.5],[7750,8000,360],[8250,8500,382.5],[8750,9000,405],[9250,9500,427.5],[9750,10000,450],[10250,10500,472.5],[10750,11000,495],[11250,11500,517.5],[11750,12000,540],[12250,12500,562.5],[12750,13000,585],[13250,13500,607.5],[13750,14000,630],[14250,14500,652.5],[14750,15000,675],[15250,15500,697.5],[15750,16000,720],[16250,16500,742.5],[16750,17000,765],[17250,17500,787.5],[17750,18000,810],[18250,18500,832.5],[18750,19000,855],[19250,19500,877.5],[19750,20000,900],[20250,20500,922.5],[20750,21000,945],[21250,21500,967.5],[21750,22000,990],[22250,22500,1012.5],[22750,23000,1035],[23250,23500,1057.5],[23750,24000,1080],[24250,24500,1102.5],[24750,25000,1125],[25250,25500,1147.5],[25750,26000,1170],[26250,26500,1192.5],[26750,27000,1215],[27250,27500,1237.5],[27750,28000,1260],[28250,28500,1282.5],[28750,29000,1305],[29250,29500,1327.5],[29750,30000,1350]];
+function autoCalcMSC(){
+  const salary=v('sss-salary-input');if(!salary)return;
+  let match=sssTable[sssTable.length-1];
+  for(let i=0;i<sssTable.length;i++){if(salary<(sssTable[i+1]?sssTable[i+1][0]:Infinity)){match=sssTable[i];break;}}
+  document.getElementById('sss-msc').value=match[1];document.getElementById('sss-contrib').value=match[2];calcSSS();
+}
+function calcSSS(){
+  const age=v('sss-age'),retireAge=parseInt(document.getElementById('sss-retire').value)||65,cys=v('sss-cys'),msc=v('sss-msc'),contrib=v('sss-contrib');
+  if(!age||!msc)return;
+  const ytr=Math.max(0,retireAge-age),totalCYS=cys+ytr,amsc=msc,extraCYS=Math.max(0,totalCYS-10);
+  const fA=300+(0.20*amsc)+(0.02*amsc*extraCYS),fB=0.40*amsc,fC=1000,pension=Math.max(fA,fB,fC),totalContrib=contrib*12*ytr*2;
+  document.getElementById('sss-ytr').textContent=ytr+' yrs';document.getElementById('sss-pension').textContent=fmt(pension);document.getElementById('sss-total-cys').textContent=totalCYS.toFixed(0)+' yrs';document.getElementById('sss-total-contrib').textContent=fmt(totalContrib);
+}
+function resetSSS(){['sss-age','sss-cys','sss-salary-input','sss-msc','sss-contrib'].forEach(id=>document.getElementById(id).value='');['sss-ytr','sss-pension','sss-total-cys'].forEach(id=>document.getElementById(id).textContent='—');document.getElementById('sss-total-contrib').textContent='₱0';}
+
+/* ══════════════════════════════════════════════════
+   DEBT PLANNER
+══════════════════════════════════════════════════ */
+let debts=[];
+function addDebt(){
+  const name=document.getElementById('d-name').value.trim()||'Debt '+(debts.length+1),balance=v('d-balance'),rate=v('d-rate'),minpay=v('d-minpay');
+  if(balance<=0){alert('Enter a balance amount.');return;}
+  debts.push({id:Date.now(),name,balance,rate,minpay});
+  ['d-name','d-balance','d-rate','d-minpay'].forEach(id=>document.getElementById(id).value='');
+  renderDebtTable();calcDebt();
+}
+function removeDebt(id){debts=debts.filter(d=>d.id!==id);renderDebtTable();calcDebt();}
+function estimatePayoff(balance,monthlyRate,payment){const r=monthlyRate/100;if(r<=0)return payment>0?Math.ceil(balance/payment):Infinity;if(payment<=balance*r)return Infinity;return Math.ceil(-Math.log(1-(balance*r/payment))/Math.log(1+r));}
+function renderDebtTable(){
+  const sorted=[...debts].sort((a,b)=>a.balance-b.balance);const tbody=document.getElementById('debt-tbody');tbody.innerHTML='';
+  if(!sorted.length){document.getElementById('debt-list-wrap').style.display='none';return;}
+  document.getElementById('debt-list-wrap').style.display='block';
+  const cols=['var(--a2)','var(--a3)','var(--a1)','var(--a4)','var(--a5)','var(--a6)'];
+  sorted.forEach((d,i)=>{const pm=estimatePayoff(d.balance,d.rate,d.minpay),pt=pm===Infinity?'Never':pm<12?pm+'m':Math.floor(pm/12)+'y '+(pm%12)+'m';tbody.innerHTML+=`<tr><td><span style="display:inline-block;width:4px;height:24px;background:${cols[i%cols.length]};border-radius:2px;margin-right:6px;vertical-align:middle;"></span><strong>#${i+1}</strong></td><td><strong>${d.name}</strong></td><td>${fmt(d.balance)}</td><td>${d.rate}%</td><td>${fmt(d.minpay)}</td><td style="color:${pm<=24?'var(--a2)':pm<=60?'var(--a3)':'var(--a5)'};font-weight:700;">${pt}</td><td><button onclick="removeDebt(${d.id})" style="background:none;border:none;color:var(--a5);cursor:pointer;font-size:14px;padding:2px 6px;">✕</button></td></tr>`;});
+}
+function calcDebt(){
+  if(!debts.length){document.getElementById('debt-results').style.display='none';return;}
+  const extra=v('d-extra'),sorted=[...debts].sort((a,b)=>a.balance-b.balance);
+  let totalBalance=debts.reduce((s,d)=>s+d.balance,0),totalMinPay=debts.reduce((s,d)=>s+d.minpay,0);
+  let balances=sorted.map(d=>({...d})),months=0,totalInterest=0;
+  const MAX=480;
+  while(balances.some(d=>d.balance>0)&&months<MAX){
+    months++;let available=extra;
+    for(let d of balances){if(d.balance<=0)continue;const interest=d.balance*(d.rate/100);totalInterest+=interest;d.balance+=interest;let pay=d.minpay;if(balances.filter(x=>x.balance>0)[0]===d)pay+=available;pay=Math.min(pay,d.balance);d.balance-=pay;if(d.balance<.01){available+=d.minpay;d.balance=0;}}
+  }
+  const eta=months>=MAX?'40+ yrs':months<12?months+'m':Math.floor(months/12)+'y '+(months%12)+'m';
+  document.getElementById('debt-results').style.display='grid';
+  document.getElementById('dr-total').textContent=fmt(totalBalance);document.getElementById('dr-minpay').textContent=fmt(totalMinPay+extra);document.getElementById('dr-eta').textContent=eta;document.getElementById('dr-eta-sub').textContent=extra>0?'With ₱'+extra.toLocaleString()+' extra/mo':'No extra payment';document.getElementById('dr-interest').textContent=fmt(totalInterest);
+}
+function clearDebts(){debts=[];renderDebtTable();document.getElementById('debt-results').style.display='none';document.getElementById('d-extra').value='';}
+
+/* ══════════════════════════════════════════════════
+   BONUS ALLOCATOR
+══════════════════════════════════════════════════ */
+function calcBonus(){
+  const amount=v('bn-amount');if(!amount)return;
+  const hasDebt=document.getElementById('bn-has-debt').value==='yes';
+  const efStatus=document.getElementById('bn-ef-status').value;
+  const investing=document.getElementById('bn-investing').value==='yes';
+  // Smart allocation logic
+  let alloc={};
+  if(efStatus==='none'){alloc['🛡️ Emergency Fund']=40;alloc['💰 MP2 / Investing']=20;alloc['💳 Debt Paydown']=hasDebt?25:0;alloc['🎉 Lifestyle / Reward']=hasDebt?15:40;}
+  else if(efStatus==='partial'){alloc['🛡️ Emergency Fund']=20;alloc['💰 MP2 / Investing']=investing?35:25;alloc['💳 Debt Paydown']=hasDebt?25:0;alloc['🎉 Lifestyle / Reward']=hasDebt?20:55;}
+  else{alloc['🛡️ Emergency Fund']=0;alloc['💰 MP2 / Investing']=investing?50:40;alloc['💳 Debt Paydown']=hasDebt?30:0;alloc['🎉 Lifestyle / Reward']=hasDebt?20:60;}
+  // Remove zero entries and normalize
+  Object.keys(alloc).forEach(k=>{if(alloc[k]===0)delete alloc[k];});
+  const total=Object.values(alloc).reduce((a,b)=>a+b,0);
+  Object.keys(alloc).forEach(k=>alloc[k]=Math.round((alloc[k]/total)*100));
+  const colors={'🛡️ Emergency Fund':'#0d9488','💰 MP2 / Investing':'#2563eb','💳 Debt Paydown':'#e11d48','🎉 Lifestyle / Reward':'#d97706'};
+  // Render bar
+  const bar=document.getElementById('alloc-bar');bar.innerHTML='';
+  Object.keys(alloc).forEach(k=>{const seg=document.createElement('div');seg.className='alloc-segment';seg.style.width=alloc[k]+'%';seg.style.background=colors[k]||'#7c3aed';seg.textContent=alloc[k]>8?alloc[k]+'%':'';bar.appendChild(seg);});
+  // Render legend
+  const legend=document.getElementById('alloc-legend');legend.innerHTML='';
+  Object.keys(alloc).forEach(k=>{legend.innerHTML+=`<div class="alloc-legend-item"><span class="alloc-dot" style="background:${colors[k]||'#7c3aed'};"></span>${k}<span class="alloc-val">${fmt(amount*alloc[k]/100)} (${alloc[k]}%)</span></div>`;});
+  // Render cards
+  const cards=document.getElementById('bonus-result-cards');cards.innerHTML='';
+  Object.keys(alloc).forEach(k=>{cards.innerHTML+=`<div class="result-card" style="border-left-color:${colors[k]||'#7c3aed'};"><div class="result-lbl">${k}</div><div class="result-val">${fmt(amount*alloc[k]/100)}</div><div class="result-sub">${alloc[k]}% of bonus</div></div>`;});
+  // Tip
+  let tip='';
+  if(efStatus==='none')tip='<strong>Priority: Emergency Fund first!</strong> Without a safety net, one crisis wipes out all your progress. Build it before investing.';
+  else if(hasDebt)tip='<strong>Debt is expensive.</strong> Putting bonus money into debt paydown gives you a guaranteed return equal to the interest rate. Kill it fast.';
+  else tip='<strong>You\'re in a great position!</strong> Emergency fund is set and no debt — channel the majority into MP2 or investments to build long-term wealth.';
+  document.getElementById('bonus-tip-text').innerHTML=tip;
+  document.getElementById('bonus-result').style.display='block';
+}
+
+/* ══════════════════════════════════════════════════
+   GOAL TRACKER
+══════════════════════════════════════════════════ */
+let goals=[];
+function addGoal(){
+  const name=document.getElementById('goal-name').value.trim();const target=v('goal-target');const saved=v('goal-saved');const monthly=v('goal-monthly');const cat=document.getElementById('goal-cat').value;
+  if(!name||!target){alert('Enter a goal name and target amount.');return;}
+  goals.push({id:Date.now(),name,target,saved,monthly,cat});
+  ['goal-name','goal-target','goal-saved','goal-monthly'].forEach(id=>document.getElementById(id).value='');
+  renderGoals();
+}
+function removeGoal(id){goals=goals.filter(g=>g.id!==id);renderGoals();}
+function clearGoals(){goals=[];renderGoals();}
+function renderGoals(){
+  const container=document.getElementById('goals-list');container.innerHTML='';
+  if(!goals.length){container.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;">No goals added yet. Add your first financial goal above.</div>';return;}
+  goals.forEach(g=>{
+    const pct=g.target>0?Math.min((g.saved/g.target)*100,100):0,gap=Math.max(0,g.target-g.saved),eta=(g.monthly>0&&gap>0)?Math.ceil(gap/g.monthly):null,done=gap===0;
+    const etaText=done?'✅ Goal reached!':eta?'~'+(eta<12?eta+'m':Math.floor(eta/12)+'y '+(eta%12)+'m')+' to go':'Add monthly savings';
+    const etaColor=done?'var(--a2)':eta&&eta<=12?'var(--a2)':eta&&eta<=36?'var(--a3)':'var(--a5)';
+    container.innerHTML+=`<div class="goal-item"><div class="goal-item-top"><span style="font-size:18px;">${g.cat}</span><div style="flex:1;margin-left:10px;"><div class="goal-name">${g.name}</div><div class="goal-meta"><span>Target: <strong>${fmt(g.target)}</strong></span><span>Saved: <strong style="color:var(--a2);">${fmt(g.saved)}</strong></span>${g.monthly?`<span>Monthly: <strong>${fmt(g.monthly)}</strong></span>`:''}</div></div><span class="goal-eta" style="background:${etaColor}1a;color:${etaColor};border:1px solid ${etaColor}33;">${etaText}</span><button onclick="removeGoal(${g.id})" style="background:none;border:none;color:var(--a5);cursor:pointer;font-size:16px;margin-left:8px;">✕</button></div><div class="progress-row"><span class="progress-label">${pct.toFixed(1)}% funded</span><span class="progress-pct">${fmt(gap)} remaining</span></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${done?'var(--a2)':pct>=50?'var(--a3)':'var(--a5)'}"></div></div></div>`;
+  });
+}
+renderGoals();
+
+/* ══════════════════════════════════════════════════
+   SALARY RAISE PROJECTOR
+══════════════════════════════════════════════════ */
+let salaryChartInst=null;
+function calcSalary(){
+  const current=v('sal-current'),raiseP=v('sal-raise'),saverate=v('sal-saverate')/100,years=Math.max(1,parseInt(document.getElementById('sal-years').value)||10),freq=parseInt(document.getElementById('sal-freq').value);
+  if(!current||!raiseP)return;
+  const newSalary=current*(1+raiseP/100),netNow=current*0.85,netNew=newSalary*0.85,monthlyInc=netNew-netNow,annualInc=monthlyInc*12;
+  document.getElementById('sal-net-now').textContent=fmt(netNow);document.getElementById('sal-net-new').textContent=fmt(netNew);document.getElementById('sal-monthly-inc').textContent=fmt(monthlyInc);document.getElementById('sal-annual-inc').textContent=fmt(annualInc);document.getElementById('sal-years-label').textContent=years;
+  // Scenarios
+  function projectSavings(salary,rate,yrs){let total=0,s=salary*0.85;for(let y=0;y<yrs;y++){if(freq>0&&y>0&&y%freq===0)s*=(1+raiseP/100);total+=s*rate*12;}return total;}
+  const s1=projectSavings(current,saverate,years),s2=projectSavings(newSalary,saverate,years),s3=projectSavings(newSalary,Math.min(saverate+(raiseP/200),0.5),years);
+  const scenarios=document.getElementById('sal-scenarios');
+  scenarios.innerHTML=`<div class="scenario-card" style="border-top-color:var(--muted);"><div class="scenario-label">Current (no raise)</div><div class="scenario-val">${fmt(s1)}</div><div class="scenario-sub">Total savings over ${years} yrs</div></div><div class="scenario-card" style="border-top-color:var(--a2);"><div class="scenario-label">With Raise (same rate)</div><div class="scenario-val" style="color:var(--a2);">${fmt(s2)}</div><div class="scenario-sub">+${fmt(s2-s1)} more than now</div></div><div class="scenario-card" style="border-top-color:var(--a4);"><div class="scenario-label">Raise + Save More 💡</div><div class="scenario-val" style="color:var(--a4);">${fmt(s3)}</div><div class="scenario-sub">+${fmt(s3-s1)} if you also boost savings rate</div></div>`;
+  // Chart
+  const labels=Array.from({length:years},(_,i)=>'Y'+(i+1));
+  function cumulative(salary,rate,yrs){let arr=[],total=0,s=salary*0.85;for(let y=0;y<yrs;y++){if(freq>0&&y>0&&y%freq===0)s*=(1+raiseP/100);total+=s*rate*12;arr.push(Math.round(total));}return arr;}
+  const ctx=document.getElementById('salaryChart').getContext('2d');if(salaryChartInst)salaryChartInst.destroy();
+  salaryChartInst=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'No Raise',data:cumulative(current,saverate,years),borderColor:'var(--muted)',borderWidth:2,fill:false,tension:.3},{label:'With Raise',data:cumulative(newSalary,saverate,years),borderColor:'var(--a2)',borderWidth:2.5,fill:false,tension:.3},{label:'Raise + Save More',data:cumulative(newSalary,Math.min(saverate+raiseP/200,.5),years),borderColor:'var(--a4)',borderWidth:2,fill:false,tension:.3,borderDash:[5,3]}]},options:{responsive:true,plugins:{legend:{labels:{color:'rgba(160,180,210,.85)',font:{family:'Plus Jakarta Sans',size:11}}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': ₱'+c.parsed.y.toLocaleString()}}},scales:{x:{ticks:{color:'rgba(160,180,210,.7)',font:{size:10}},grid:{color:'rgba(37,99,235,.06)'}},y:{ticks:{color:'rgba(160,180,210,.7)',font:{size:10},callback:v=>'₱'+v.toLocaleString()},grid:{color:'rgba(37,99,235,.06)'}}}}});
+  document.getElementById('salary-results').style.display='block';
+}
+
+/* ══════════════════════════════════════════════════
+   EARLY VS LATE COMPARISON
+══════════════════════════════════════════════════ */
+let compareChartInst=null;
+function calcCompare(){
+  const monthly=Math.max(v('cmp-monthly')||500,1),rate=v('cmp-rate')/100||.0703,ageEarly=v('cmp-age-early')||25,ageLate=v('cmp-age-late')||35,retire=v('cmp-retire')||65;
+  const yearsEarly=Math.max(0,retire-ageEarly),yearsLate=Math.max(0,retire-ageLate);
+  function compound(yrs){let b=0;for(let y=0;y<yrs;y++)for(let m=0;m<12;m++){b+=monthly;b*=(1+rate/12);}return b;}
+  const earlyVal=compound(yearsEarly),lateVal=compound(yearsLate),earlyContrib=monthly*12*yearsEarly,lateContrib=monthly*12*yearsLate,diff=earlyVal-lateVal;
+  document.getElementById('cmp-label-early').textContent='Started at '+ageEarly;document.getElementById('cmp-years-early').textContent=yearsEarly+' years investing';document.getElementById('cmp-val-early').textContent=fmt(earlyVal);document.getElementById('cmp-gain-early').textContent='+'+fmt(earlyVal-earlyContrib)+' in dividends/gains';document.getElementById('cmp-contrib-early').textContent='Total invested: '+fmt(earlyContrib);
+  document.getElementById('cmp-label-late').textContent='Started at '+ageLate;document.getElementById('cmp-years-late').textContent=yearsLate+' years investing';document.getElementById('cmp-val-late').textContent=fmt(lateVal);document.getElementById('cmp-gain-late').textContent='+'+fmt(lateVal-lateContrib)+' in dividends/gains';document.getElementById('cmp-contrib-late').textContent='Total invested: '+fmt(lateContrib);
+  const early=document.getElementById('cmp-card-early'),late=document.getElementById('cmp-card-late');early.classList.toggle('winner',earlyVal>lateVal);late.classList.toggle('winner',lateVal>earlyVal);
+  document.getElementById('cmp-diff').innerHTML=diff>0?`By starting at <strong>${ageEarly}</strong> instead of <strong>${ageLate}</strong>, the early starter ends up with <strong style="color:var(--a2);">${fmt(diff)} more</strong> at retirement — even if both contributed the same monthly amount. Time is the ingredient you cannot buy back.`:`Enter different ages to compare.`;
+  // Chart
+  const maxYears=Math.max(yearsEarly,yearsLate),labels=Array.from({length:maxYears},(_,i)=>'Y'+(i+1));
+  function yrData(yrs){let arr=[],b=0;for(let y=0;y<maxYears;y++){if(y<yrs){for(let m=0;m<12;m++){b+=monthly;b*=(1+rate/12);}}arr.push(Math.round(b));}return arr;}
+  const ctx=document.getElementById('compareChart').getContext('2d');if(compareChartInst)compareChartInst.destroy();
+  compareChartInst=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Early Starter (age '+ageEarly+')',data:yrData(yearsEarly),borderColor:'#0d9488',borderWidth:2.5,fill:false,tension:.3},{label:'Late Starter (age '+ageLate+')',data:yrData(yearsLate),borderColor:'#e11d48',borderWidth:2,fill:false,tension:.3,borderDash:[5,3]}]},options:{responsive:true,plugins:{legend:{labels:{color:'rgba(160,180,210,.85)',font:{family:'Plus Jakarta Sans',size:11}}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': ₱'+c.parsed.y.toLocaleString()}}},scales:{x:{ticks:{color:'rgba(160,180,210,.7)',font:{size:10}},grid:{color:'rgba(37,99,235,.06)'}},y:{ticks:{color:'rgba(160,180,210,.7)',font:{size:10},callback:v=>'₱'+v.toLocaleString()},grid:{color:'rgba(37,99,235,.06)'}}}}});
+}
+calcCompare();
+
+/* ══════════════════════════════════════════════════
+   SAVINGS HABIT TRACKER
+══════════════════════════════════════════════════ */
+const HABIT_KEY='creg_habit_v2';
+function getHabitData(){try{return JSON.parse(localStorage.getItem(HABIT_KEY)||'{}')}catch(e){return {};}}
+function saveHabitData(d){try{localStorage.setItem(HABIT_KEY,JSON.stringify(d));}catch(e){}}
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function initHabitYearSel(){
+  const sel=document.getElementById('habit-year-sel'),cur=new Date().getFullYear();
+  for(let y=cur-2;y<=cur+2;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===cur)o.selected=true;sel.appendChild(o);}
+}
+function renderHabit(){
+  const year=parseInt(document.getElementById('habit-year-sel').value)||new Date().getFullYear();
+  document.getElementById('habit-year').textContent=year;
+  const data=getHabitData();const key='y'+year;const yearData=data[key]||Array(12).fill(0);
+  const labels=document.getElementById('habit-month-labels'),grid=document.getElementById('habit-grid');
+  labels.innerHTML='';grid.innerHTML='';
+  MONTHS.forEach((m,i)=>{labels.innerHTML+=`<div class="habit-month-label">${m}</div>`;const cell=document.createElement('div');cell.className='habit-cell'+(yearData[i]===2?' done':yearData[i]===1?' partial':'');cell.title=m+' '+year+': '+(yearData[i]===2?'✅ Saved':yearData[i]===1?'🟡 Partial':'⬜ Not saved');cell.onclick=()=>{const d=getHabitData();const k='y'+year;if(!d[k])d[k]=Array(12).fill(0);d[k][i]=(d[k][i]+1)%3;saveHabitData(d);renderHabit();};grid.appendChild(cell);});
+  // Streak & stats
+  const saved=yearData.filter(x=>x===2).length;
+  let streak=0,best=0,cur2=0;
+  for(let i=0;i<12;i++){if(yearData[i]===2){cur2++;best=Math.max(best,cur2);}else cur2=0;}
+  // Current streak from latest month
+  let cs=0;for(let i=new Date().getMonth();i>=0;i--){if(yearData[i]===2)cs++;else break;}
+  document.getElementById('habit-streak').textContent=cs+' months';document.getElementById('habit-best').textContent=best+' months';document.getElementById('habit-count').textContent=saved+' / 12 months';
+}
+function clearHabit(){const year=parseInt(document.getElementById('habit-year-sel').value);const d=getHabitData();delete d['y'+year];saveHabitData(d);renderHabit();}
+initHabitYearSel();renderHabit();
+
+/* ══════════════════════════════════════════════════
+   FINANCIAL HEALTH SCORE
+══════════════════════════════════════════════════ */
+function calcScore(){
+  let total=0,items=[];
+  // 1. Savings Rate (25pts)
+  const net=v('b-net')||v('b-gross')*0.85;const totalIncome=(net||v('b-gross'))+v('b-other')+v('b-allow');const totalExp=v('b-rent')+v('b-util')+v('b-inet')+v('b-trans')+v('b-loan')+v('b-ins')+v('b-food')+v('b-dining')+v('b-cloth')+v('b-ent')+v('b-health')+v('b-misc');
+  let savePts=0;if(totalIncome>0){const rate=((totalIncome-totalExp)/totalIncome)*100;if(rate>=30)savePts=25;else if(rate>=20)savePts=20;else if(rate>=10)savePts=12;else if(rate>0)savePts=5;else savePts=0;}
+  items.push({label:'Savings Rate',icon:'💰',pts:savePts,max:25,sub:totalIncome>0?((((totalIncome-totalExp)/totalIncome)*100).toFixed(1)+'% savings rate'):'Fill Budget tab'});total+=savePts;
+  // 2. Emergency Fund (25pts)
+  const efMonthly=v('ef-monthly'),efCurrent=v('ef-current'),efMonths=parseInt(document.getElementById('ef-months').value)||6;
+  let efPts=0;if(efMonthly>0){const efTarget=efMonthly*6,pct=(efCurrent/efTarget)*100;if(pct>=100)efPts=25;else if(pct>=75)efPts=18;else if(pct>=50)efPts=12;else if(pct>=25)efPts=7;else efPts=2;}
+  items.push({label:'Emergency Fund',icon:'🛡️',pts:efPts,max:25,sub:efMonthly>0?((Math.min((efCurrent/(efMonthly*6))*100,100)).toFixed(0)+'% funded'):'Fill Emergency tab'});total+=efPts;
+  // 3. Investment Activity (20pts)
+  const mp2Monthly=v('mp2-monthly'),mp2Capital=v('mp2-capital');let invPts=0;
+  if(mp2Capital>100000)invPts=20;else if(mp2Capital>50000)invPts=17;else if(mp2Capital>0||mp2Monthly>=1000)invPts=13;else if(mp2Monthly>=500)invPts=8;else invPts=0;
+  items.push({label:'Investment Activity',icon:'📈',pts:invPts,max:20,sub:mp2Monthly>0||mp2Capital>0?'MP2 active ✅':'Fill MP2 tab'});total+=invPts;
+  // 4. Debt Burden (20pts)
+  let debtPts=20;if(debts.length>0){const totalDebt=debts.reduce((s,d)=>s+d.balance,0);if(totalIncome>0){const dti=(debts.reduce((s,d)=>s+d.minpay,0)/(totalIncome))*100;if(dti>40)debtPts=2;else if(dti>30)debtPts=6;else if(dti>20)debtPts=11;else if(dti>10)debtPts=15;else debtPts=18;}else debtPts=10;}
+  items.push({label:'Debt Burden',icon:'💳',pts:debtPts,max:20,sub:debts.length>0?'Debt-to-income ratio assessed':'No debts entered (max pts assumed)'});total+=debtPts;
+  // 5. Habit Consistency (10pts)
+  const habitData=getHabitData(),yr='y'+new Date().getFullYear(),yearArr=habitData[yr]||Array(12).fill(0);const savedMonths=yearArr.filter(x=>x===2).length;const habitPts=Math.round((savedMonths/12)*10);
+  items.push({label:'Savings Habit',icon:'✅',pts:habitPts,max:10,sub:savedMonths+'/12 months saved this year'});total+=habitPts;
+  // Render ring
+  const circumference=345.4,circle=document.getElementById('score-ring-circle'),offset=circumference-(total/100)*circumference;
+  circle.style.strokeDashoffset=offset;
+  const color=total>=80?'var(--a2)':total>=60?'var(--a3)':total>=40?'var(--a6)':'var(--a5)';
+  circle.style.stroke=color;
+  document.getElementById('score-num').textContent=total;document.getElementById('score-num').style.color=color;
+  const grade=total>=90?'A+ Excellent':total>=80?'A Outstanding':total>=70?'B+ Very Good':total>=60?'B Good':total>=50?'C+ Fair':total>=40?'C Needs Work':'D At Risk';
+  document.getElementById('score-grade').textContent=grade;document.getElementById('score-grade').style.color=color;
+  // Breakdown
+  const det=document.getElementById('score-details');det.innerHTML='';
+  items.forEach(item=>{const pct=(item.pts/item.max)*100;const c=pct>=80?'var(--a2)':pct>=50?'var(--a3)':'var(--a5)';det.innerHTML+=`<div class="score-item"><div class="score-item-icon" style="background:${c}1a;font-size:14px;">${item.icon}</div><div class="score-item-body"><div class="score-item-label">${item.label}</div><div class="score-item-sub">${item.sub}</div></div><div class="score-pts" style="color:${c};">${item.pts}/${item.max}</div></div>`;});
+  // Tip
+  const weakest=items.reduce((a,b)=>(b.pts/b.max<a.pts/a.max)?b:a);
+  const tips={'Savings Rate':'Your savings rate needs improvement. Try the 50-30-20 rule: 50% needs, 30% wants, 20% savings.','Emergency Fund':'Build your emergency fund first — it\'s your financial immune system.','Investment Activity':'Start your MP2 journey — even ₱500/month grows significantly over time.','Debt Burden':'High debt burden is your biggest financial risk. Focus on the Debt Planner tab.','Savings Habit':'Consistency beats amount. Mark your habit tracker every month you save.'};
+  document.getElementById('score-tip-text').innerHTML=`<strong>Your weakest area: ${weakest.icon} ${weakest.label}.</strong> ${tips[weakest.label]||'Keep improving across all areas!'}`;
+}
+
+/* ══════════════════════════════════════════════════
+   FINANCIAL LITERACY QUIZ
+══════════════════════════════════════════════════ */
+const quizData=[
+  {q:'What is the minimum monthly contribution for PAG-IBIG MP2?',opts:['₱100','₱200','₱500','₱1,000'],correct:2,explain:'The minimum monthly contribution for MP2 is ₱500. You can contribute more — there is no maximum. The great thing is dividends are tax-free and historically average 6–9% per year.'},
+  {q:'In the "debt snowball" method, which debt do you pay off first?',opts:['The one with the highest interest rate','The one with the highest balance','The one with the smallest balance','The most recent debt'],correct:2,explain:'Snowball = smallest balance first. This builds psychological momentum. (Avalanche = highest rate first = saves the most money in total interest.)'},
+  {q:'Your monthly salary is ₱20,000. How many months of expenses should your emergency fund cover (recommended minimum)?',opts:['1 month','2 months','3 months','6 months'],correct:2,explain:'3 months is the minimum, but 6 months is the standard recommendation. Hospital workers especially benefit from a larger fund due to the nature of healthcare emergencies.'},
+  {q:'Which of the following is TRUE about PAG-IBIG MP2 dividends?',opts:['They are subject to 20% final tax','They are completely tax-free','They are taxed like regular income','They are taxed at 10%'],correct:1,explain:'MP2 dividends are 100% tax-free under Philippine law. This is one of the biggest advantages — a 7% tax-free return is worth more than a 9% taxable return.'},
+  {q:'What does "compound interest" mean?',opts:['Interest calculated only on your original investment','Interest you earn on both your principal and previously earned interest','A fixed interest rate that never changes','Interest paid by the government'],correct:1,explain:'Compound interest = earning interest on your interest. This is why starting early is so powerful — even a small investment grows exponentially over decades.'},
+  {q:'A credit card charges 3% per month interest. What is the effective annual interest rate?',opts:['3%','18%','36%','Around 42.6%'],correct:3,explain:'3% per month compounded = about 42.6% per year effective rate. This is why credit card debt is so dangerous. Paying off a 3%/month credit card = guaranteed 42.6% annual return.'},
+  {q:'Which investment is generally considered LOWEST risk for a Filipino employee?',opts:['PSE stock market','PAG-IBIG MP2','Cryptocurrency','High-yield savings account'],correct:1,explain:'MP2 is government-backed, so it carries very low risk. HYSAs are also low risk but typically offer lower returns. Stocks and crypto can lose significant value.'},
+  {q:'What is the SSS minimum pension for a retiree?',opts:['₱500','₱750','₱1,000','₱1,500'],correct:2,explain:'The SSS minimum monthly pension is ₱1,000 for those with at least 10 credited years of service. This is why it\'s important to pay SSS continuously — even voluntary contributions count.'},
+  {q:'What is "UITF" in the context of Philippine investing?',opts:['A type of government bond','Unit Investment Trust Fund — a pooled investment managed by a bank','A special SSS savings program','A Pag-IBIG voluntary contribution scheme'],correct:1,explain:'UITF = Unit Investment Trust Fund. Your money is pooled with other investors and managed by professional fund managers. Available at banks like BDO, BPI, Metrobank. Tax-free gains under TRAIN Law.'},
+  {q:'You receive your 13th month pay. According to smart money habits, what should you do FIRST?',opts:['Buy something you\'ve been wanting','Put it all in stocks','Allocate to emergency fund and/or debt before spending on wants','Save it in a regular bank savings account earning 0.1%'],correct:2,explain:'Pay yourself first — allocate to financial priorities (emergency fund, debt, investments) before spending on wants. Even putting 50% away and enjoying 50% is better than spending 100%.'}
+];
+let currentQ=0,score=0,answered=Array(10).fill(false);
+function renderQuiz(){
+  const c=document.getElementById('quiz-container');c.innerHTML='';
+  if(currentQ>=quizData.length){c.style.display='none';document.getElementById('quiz-score-box').style.display='block';const grade=score>=9?'🏆 Finance Genius!':score>=7?'⭐ Financial Savvy':score>=5?'📚 Learning Well':score>=3?'💪 Keep Going!':'🌱 Great Start!';document.getElementById('quiz-score-big').textContent=score+'/10';document.getElementById('quiz-score-grade').textContent=grade;const msgs=['You have excellent financial literacy. Share this knowledge with your team!','Great financial knowledge. A few concepts to review — use the other tabs to deepen your understanding.','You\'re building your knowledge. Revisit the Invest 101 and MP2 tabs to strengthen your foundation.','Don\'t worry — financial literacy is learned, not born. Use this tool regularly and retake the quiz!','Every expert started as a beginner. Go through each module in this planner and come back!'];document.getElementById('quiz-score-msg').textContent=msgs[score>=9?0:score>=7?1:score>=5?2:score>=3?3:4];return;}
+  const q=quizData[currentQ];document.getElementById('quiz-progress').style.width=((currentQ/10)*100)+'%';document.getElementById('quiz-q-num').textContent=currentQ+1;
+  const qDiv=document.createElement('div');qDiv.className='quiz-question';qDiv.innerHTML=`<div class="quiz-q-text">${currentQ+1}. ${q.q}</div><div class="quiz-options">${q.opts.map((o,i)=>`<button class="quiz-option" onclick="answerQ(${i})" id="qo-${i}">${o}</button>`).join('')}</div><div class="quiz-explanation" id="qexpl">${q.explain}</div>`;c.appendChild(qDiv);
+}
+function answerQ(i){
+  if(answered[currentQ])return;answered[currentQ]=true;const q=quizData[currentQ],correct=q.correct===i;if(correct)score++;
+  document.querySelectorAll('.quiz-option').forEach((b,idx)=>{b.disabled=true;if(idx===q.correct)b.classList.add('correct');else if(idx===i&&!correct)b.classList.add('wrong');});
+  document.getElementById('qexpl').style.display='block';
+  setTimeout(()=>{currentQ++;renderQuiz();},2200);
+}
+function restartQuiz(){currentQ=0;score=0;answered=Array(10).fill(false);document.getElementById('quiz-score-box').style.display='none';document.getElementById('quiz-container').style.display='block';document.getElementById('quiz-progress').style.width='0%';renderQuiz();}
+renderQuiz();
+
+/* ══ PDF EXPORT ══ */
+function exportPDF(){const prev=document.documentElement.getAttribute('data-theme');document.documentElement.setAttribute('data-theme','light');setTimeout(()=>{window.print();setTimeout(()=>document.documentElement.setAttribute('data-theme',prev),500);},300);}
+</script>
+</body>
+</html>
