@@ -2751,13 +2751,12 @@ function saveAndDeploy() {
     // Bake the current DB data directly into the HTML
     // Inject AFTER var DB = {...} declaration so it overwrites immediately
     const dbJSON = JSON.stringify(DB);
-    const bakedScript = '<script>/* BAKED DATA */\nvar DB=' + dbJSON + ';\nvar D=DB;\nvar MCOLS=D.MCOLS;<\/script>';
+    const bakedScript = '<script>/* BAKED DATA */\nvar DB=' + dbJSON + ';\nvar D=DB,MCOLS=D.MCOLS;<\/script>';
 
     // Replace the original var DB declaration with baked data
-    // Find the closing of the DB object (ends with a specific pattern)
     const dbStart = html.indexOf('var DB = {');
-    const dbEnd = html.indexOf('\nvar D = DB;', dbStart);
-    if(dbStart > -1 && dbEnd > -1) {
+    const dbEnd = html.indexOf('\nvar D=DB,MCOLS=D.MCOLS;', dbStart) + '\nvar D=DB,MCOLS=D.MCOLS;'.length;
+    if(dbStart > -1 && dbEnd > dbStart) {
       html = html.slice(0, dbStart) + bakedScript + html.slice(dbEnd);
     }
 
