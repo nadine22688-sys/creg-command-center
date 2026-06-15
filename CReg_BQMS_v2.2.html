@@ -465,6 +465,13 @@
   .staff-info { flex: 1; }
   .staff-name { font-size: 14px; font-weight: 600; }
   .staff-role { font-size: 11px; color: var(--text3); }
+  /* Action buttons (Edit / Reset PW / Delete) for each staff row */
+  .staff-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .staff-actions .btn-sm { padding: 6px 10px; font-size: 12px; }
+  @media (max-width: 480px) {
+    .staff-item { flex-wrap: wrap; }
+    .staff-actions { width: 100%; justify-content: flex-start; }
+  }
   .add-staff-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   @media (max-width: 480px) { .add-staff-form { grid-template-columns: 1fr; } }
 
@@ -1432,14 +1439,40 @@ window.doLogin = async function() {
   errEl.textContent = '';
   if (!username || !password) { errEl.textContent = 'Please enter username and password.'; return; }
   btn.disabled = true; btn.textContent = 'Logging in…';
+  let resolvedEmail = '';  // kept in scope so the catch diagnostic can log it
   try {
     // Resolve username → email
     const emailSnap = await get(ref(db, `usernames/${username}`));
-    if (!emailSnap.exists()) { errEl.textContent = 'Username not found.'; btn.disabled=false; btn.textContent='Log In'; return; }
-    const email = emailSnap.val();
-    await signInWithEmailAndPassword(auth, email, password);
+    if (!emailSnap.exists()) {
+      // Console-only diagnostic (UI stays generic so staff can't probe which usernames exist)
+      console.warn('[BQMS login] No usernames/ mapping for "' + username + '" → wrong handle, or account never created.');
+      errEl.textContent = 'Username not found.'; btn.disabled=false; btn.textContent='Log In'; return;
+    }
+    resolvedEmail = emailSnap.val();
+    await signInWithEmailAndPassword(auth, resolvedEmail, password);
     requestWakeLock();
   } catch(e) {
+    // ── DIAGNOSTIC (console only) ──────────────────────────────
+    // UI message is intentionally generic; the console gets the real Firebase
+    // reason so a TL can tell wrong-password from a missing account, a blocked
+    // domain, rate-limiting, etc. Open DevTools → Console to read it.
+    const code = (e && e.code) ? e.code : 'unknown';
+    const hints = {
+      'auth/invalid-credential'    : 'Mapping OK but sign-in rejected → wrong password OR no Auth user for this email. (Firebase email-enumeration protection merges these two — confirm the email under Console → Authentication.)',
+      'auth/wrong-password'        : 'Wrong password (the Auth account exists).',
+      'auth/user-not-found'        : 'No Auth user for this email → orphaned mapping; recreate via Add Staff.',
+      'auth/invalid-email'         : 'The mapped email value is malformed.',
+      'auth/user-disabled'         : 'This Auth account is disabled in the Console.',
+      'auth/too-many-requests'     : 'Rate-limited after repeated failures; wait, or reset the password.',
+      'auth/network-request-failed': 'Network/offline, or Firebase unreachable.',
+      'auth/unauthorized-domain'   : 'Domain not authorized — opened as a file:// download or from an unlisted host. Use the GitHub Pages link.'
+    };
+    console.warn(
+      '[BQMS login] FAILED for username "' + username + '"'
+      + '\n  resolved email : ' + (resolvedEmail || '(lookup did not complete)')
+      + '\n  firebase code  : ' + code
+      + '\n  meaning        : ' + (hints[code] || (e && e.message) || 'Unknown error.')
+    );
     errEl.textContent = 'Invalid username or password.';
     btn.disabled = false; btn.textContent = 'Log In';
   }
@@ -2605,20 +2638,31 @@ window.exportReport = async function() {
 };
 
 // ── ADMIN ────────────────────────────────────────────────────
+// Cache of the current roster keyed by uid, so the Edit / Reset PW / Delete
+// handlers can look up details without unsafe string interpolation in onclick
+// (names with apostrophes used to be able to break the inline handlers).
+let _staffCache = {};
+
 async function loadStaffList() {
   const snap = await get(ref(db,'users'));
   const list = document.getElementById('staff-list-admin');
   list.innerHTML = '';
+  _staffCache = {};
   if (!snap.exists()) { list.innerHTML = '<p style="color:var(--text3);font-size:13px">No staff accounts found.</p>'; return; }
   snap.forEach(child => {
     const d = child.val();
+    _staffCache[child.key] = d;
     const initials = (d.displayName||d.username||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
     const el = document.createElement('div');
     el.className = 'staff-item';
     el.innerHTML = `
       <div class="staff-avatar">${initials}</div>
       <div class="staff-info"><div class="staff-name">${d.displayName||d.username}</div><div class="staff-role">${d.username} · ${d.role}</div></div>
-      <button class="btn btn-ghost btn-sm" onclick="resetPasswordPrompt('${child.key}','${d.displayName||d.username}')">Reset PW</button>`;
+      <div class="staff-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editStaffPrompt('${child.key}')">Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetPasswordPrompt('${child.key}')">Reset PW</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--accent)" onclick="deleteStaffPrompt('${child.key}')">Delete</button>
+      </div>`;
     list.appendChild(el);
   });
 }
@@ -2647,9 +2691,9 @@ window.addStaffAccount = async function() {
 
   try {
     const email = `${username}@bqms.creg.local`;
-    // Use secondary auth instance to avoid signing out TL
-    const { initializeApp: initApp2 } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
-    const { getAuth: getAuth2, createUserWithEmailAndPassword: createUser2 } =
+    // Use a secondary auth instance so creating the account does NOT sign out the TL.
+    const { initializeApp: initApp2, deleteApp: deleteApp2 } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const { getAuth: getAuth2, createUserWithEmailAndPassword: createUser2, signOut: signOut2 } =
       await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
     const app2  = initApp2(fbApp.options, 'secondary-' + Date.now());
     const auth2 = getAuth2(app2);
@@ -2657,7 +2701,12 @@ window.addStaffAccount = async function() {
     const uid   = cred.user.uid;
     await set(ref(db,`users/${uid}`), { username, displayName:name, role, email });
     await set(ref(db,`usernames/${username}`), email);
-    await cred.user.delete(); // clean up secondary auth session (user still exists in Firebase Auth)
+    // BUGFIX: this previously called cred.user.delete(), which DELETED the Firebase
+    // Auth user we just created — leaving an orphaned usernames/ mapping and causing
+    // "Invalid username or password" on every device. We only need to tear down the
+    // temporary secondary session; the account itself must survive.
+    try { await signOut2(auth2); await deleteApp2(app2); }
+    catch(cleanupErr) { console.warn('Secondary app cleanup failed (account still created OK):', cleanupErr.message); }
     errEl.style.color = 'var(--success)';
     errEl.textContent = 'Account created for ' + name + '.';
     document.getElementById('new-staff-name').value='';
@@ -2677,7 +2726,9 @@ window.addStaffAccount = async function() {
   }
 };
 
-window.resetPasswordPrompt = async function(uid, name) {
+window.resetPasswordPrompt = async function(uid) {
+  const d = _staffCache[uid] || {};
+  const name = d.displayName || d.username || 'this user';
   const newPw = prompt('Enter new password for ' + name + ' (min 6 characters):');
   if (!newPw || newPw.length < 6) { alert('Password must be at least 6 characters.'); return; }
   try {
@@ -2688,6 +2739,96 @@ window.resetPasswordPrompt = async function(uid, name) {
     });
     alert('Password reset saved for ' + name + '. New password takes effect on their next login.');
   } catch(e) { alert('Error: ' + e.message); }
+};
+
+// ── EDIT ACCOUNT (display name and/or username) ───────────────
+// Renaming the username only changes the login handle. The underlying Firebase
+// Auth email/password is unchanged, so the person logs in with the new username
+// and their SAME password. All writes are done as one atomic multi-path update
+// so a rename can never leave a half-renamed mapping behind.
+window.editStaffPrompt = async function(uid) {
+  const d = _staffCache[uid];
+  if (!d) { alert('Staff record not found. Refresh the list and try again.'); return; }
+
+  // 1) Display name
+  const nameRaw = prompt('Display name:', d.displayName || '');
+  if (nameRaw === null) return;                       // cancelled
+  const name = nameRaw.trim();
+  if (!name) { alert('Display name cannot be empty.'); return; }
+
+  // 2) Username (login handle)
+  const userRaw = prompt('Username (login handle, lowercase — letters, numbers, . _ - only):', d.username || '');
+  if (userRaw === null) return;                       // cancelled
+  const newUsername = userRaw.trim().toLowerCase();
+  if (!newUsername) { alert('Username cannot be empty.'); return; }
+  if (!/^[a-z0-9._-]+$/.test(newUsername)) { alert('Username can only contain letters, numbers, dot, dash, or underscore.'); return; }
+
+  const usernameChanged = newUsername !== (d.username || '').toLowerCase();
+
+  try {
+    // Block collisions with another account's login handle
+    if (usernameChanged) {
+      const taken = await get(ref(db, `usernames/${newUsername}`));
+      if (taken.exists()) { alert('That username is already in use by another account.'); return; }
+    }
+
+    // Resolve the TRUE login email so the new mapping points to the real account.
+    let email = d.email;
+    if (usernameChanged) {
+      const oldMap = await get(ref(db, `usernames/${d.username}`));
+      if (oldMap.exists()) email = oldMap.val();
+    }
+    if (!email) email = `${d.username}@bqms.creg.local`;
+
+    // Apply all changes atomically from the DB root
+    const updates = {};
+    updates[`users/${uid}/displayName`] = name;
+    if (usernameChanged) {
+      updates[`users/${uid}/username`]    = newUsername;  // roster + role line
+      updates[`usernames/${newUsername}`] = email;        // new login mapping → same email
+      updates[`usernames/${d.username}`]  = null;         // remove the old login mapping
+    }
+    await update(ref(db), updates);
+
+    alert('Account updated.' + (usernameChanged
+      ? ' They now log in with username "' + newUsername + '" and the SAME password as before.'
+      : ''));
+    loadStaffList();
+  } catch(e) {
+    alert('Update failed: ' + e.message);
+  }
+};
+
+// ── DELETE ACCOUNT (soft delete) ──────────────────────────────
+// The client SDK cannot delete another user's Firebase Auth record (same reason
+// password resets are applied on next login). So this removes the login mapping
+// and roster record — the person can no longer log in — and leaves the Auth shell
+// to be cleared in the Firebase Console when convenient.
+window.deleteStaffPrompt = async function(uid) {
+  const d = _staffCache[uid];
+  if (!d) { alert('Staff record not found. Refresh the list and try again.'); return; }
+
+  // Guard: never delete the account you are currently logged in with
+  if (currentUser && d.email && currentUser.email === d.email) {
+    alert('You cannot delete the account you are currently logged in with.');
+    return;
+  }
+
+  const label = d.displayName || d.username;
+  if (!confirm('Remove login access for ' + label + ' (' + d.username + ')?\n\n'
+    + 'They will no longer be able to log in. This does NOT delete their Firebase '
+    + 'Authentication record — remove that later in Firebase Console → Authentication if needed.')) return;
+
+  try {
+    const updates = {};
+    updates[`users/${uid}`]            = null;  // remove roster record
+    updates[`usernames/${d.username}`] = null;  // remove login mapping → "Username not found"
+    await update(ref(db), updates);
+    alert(label + ' can no longer log in. Clean up the Auth record in Firebase Console → Authentication when convenient.');
+    loadStaffList();
+  } catch(e) {
+    alert('Delete failed: ' + e.message);
+  }
 };
 
 // ── QUEUE RESET ──────────────────────────────────────────────
@@ -2780,9 +2921,9 @@ async function bootstrapIfNeeded() {
     { username:'ipahila',     displayName:'Ian Timothy Pahila',     role:'pss'     },
     { username:'aanzures',    displayName:'Alleli Anzures',         role:'pss'     },
     { username:'jtaguiam',    displayName:'John Adrian Taguiam',    role:'pss'     },
-    { username:'masolis',     displayName:'Mary Aileen Solis',      role:'pss'     },
+    { username:'msolis',      displayName:'Mary Aileen Solis',      role:'pss'     },
     { username:'mbasilio',    displayName:'Moira Basilio',          role:'pss'     },
-    { username:'lncalica',    displayName:'Legenn Nezer Calica',    role:'pss'     },
+    { username:'lcalica',     displayName:'Legenn Nezer Calica',    role:'pss'     },
     { username:'hcvillareal', displayName:'Hans Christian Villareal', role:'pss'  },
     { username:'jamancil',    displayName:'Julie Ann Mancil',       role:'cashier' },
     { username:'gespedillon', displayName:'Gracely Espedillon',     role:'cashier' },
