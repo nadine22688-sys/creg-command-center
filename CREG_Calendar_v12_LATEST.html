@@ -1488,15 +1488,39 @@ function resetStaffPw(){
   sel.value='';
   showToast(`Password reset for ${name} ✓`,'ok');
 }
-function saveSignatory(){
+async function saveSignatory(){
   const n=document.getElementById('sig-name-inp')?.value.trim();
   const t=document.getElementById('sig-title-inp')?.value.trim();
   if(!n){showToast('Enter name','err');return;}
   window._sigName=n.toUpperCase();window._sigTitle=t||window._sigTitle||'Department Manager, Operations Support';
+  // Save locally for instant use
   localStorage.setItem('creg_sig',JSON.stringify({n:window._sigName,t:window._sigTitle}));
-  showToast('Signatory updated ✓','ok');
+  // Save to Supabase so it persists across logins/devices (stored as a settings row)
+  try{
+    const payload={month:'_settings_signatory',data:JSON.stringify({n:window._sigName,t:window._sigTitle})};
+    const up=await fetch(`${SCHED_DB_API}?month=eq._settings_signatory`,{method:'PATCH',headers:{...HDR,'Prefer':'return=representation'},body:JSON.stringify(payload)});
+    const upJson=up.ok?await up.json():[];
+    if(!Array.isArray(upJson)||!upJson.length){
+      await fetch(SCHED_DB_API,{method:'POST',headers:{...HDR,'Prefer':'return=representation'},body:JSON.stringify(payload)});
+    }
+    showToast('Signatory updated ✓ (saved to cloud)','ok');
+  }catch(e){
+    showToast('Signatory saved locally (cloud sync failed)','warn');
+  }
 }
-function loadSignatoryFromStorage(){
+async function loadSignatoryFromStorage(){
+  // 1. Load from Supabase first (authoritative, syncs across devices)
+  try{
+    const r=await fetch(`${SCHED_DB_API}?month=eq._settings_signatory&select=data`,{headers:HDR});
+    if(r.ok){
+      const rows=await r.json();
+      if(Array.isArray(rows)&&rows.length&&rows[0].data){
+        const d=JSON.parse(rows[0].data);
+        if(d.n){window._sigName=d.n;window._sigTitle=d.t;return;}
+      }
+    }
+  }catch(e){}
+  // 2. Fall back to localStorage if cloud has nothing
   try{const s=localStorage.getItem('creg_sig');if(s){const d=JSON.parse(s);window._sigName=d.n;window._sigTitle=d.t;}}catch(e){}
 }
 function openProfilePic(){
@@ -3893,6 +3917,22 @@ function deriveStaffFromSched(days,sched){
   });
   const hasRealData=k=>days.some(d=>{const v=sched[dsS(d)]?.[k];return v!==undefined&&v!==null&&v!=='';});
   let list=[...staffRef.values()].filter(s=>hasRealData(s.key));
+  // ── LIFECYCLE EXCLUSION ───────────────────────────────────────────────────
+  // Drop staff who resigned before this schedule's date range, or were hired
+  // after it ends — they should never appear even if stale blank data lingers.
+  // Determine the schedule's date span.
+  const dkList=days.map(d=>dsS(d)).sort();
+  const firstDk=dkList[0], lastDk=dkList[dkList.length-1];
+  const _slByName=new Map((staffList||[]).map(sl=>[sl.name.toLowerCase(),sl]));
+  list=list.filter(s=>{
+    const sl=_slByName.get(s.nick.toLowerCase())||_slByName.get(s.full.toLowerCase())||null;
+    if(!sl) return true; // not in staffList (core staff) — keep
+    // Resigned before this schedule even starts → exclude
+    if(sl.date_resigned&&sl.date_resigned<firstDk) return false;
+    // Hired after this schedule ends → exclude
+    if(sl.date_hired&&sl.date_hired>lastDk) return false;
+    return true;
+  });
   // ── DEDUPE SAFETY NET ─────────────────────────────────────────────────────
   // Collapse rows that are the same person under different key formats
   // (e.g. "VILLALUZ,_EDNALYN" vs "VILLALUZ_EDNALYN"). Normalize by stripping
@@ -4145,8 +4185,16 @@ function downloadHR(forcePublished){
       date_hired:sl.date_hired||null,
       date_resigned:sl.date_resigned||null
     }));
+  // Look up real lifecycle dates (date_hired / date_resigned) from staffList
+  // for ALL staff including core SCHED_STAFF, so resigned core staff (e.g. Alleli)
+  // are correctly excluded from the HR export.
+  const _lifeByName=new Map((staffList||[]).map(sl=>[sl.name.toLowerCase(),sl]));
+  function _lifeFor(s){
+    const sl=_lifeByName.get(s.nick?.toLowerCase())||_lifeByName.get(s.full?.toLowerCase())||null;
+    return {date_hired:sl?.date_hired||null, date_resigned:sl?.date_resigned||null};
+  }
   const allHRStaff=[
-    ...SCHED_STAFF.map(s=>({...s,date_hired:null,date_resigned:null})),
+    ...SCHED_STAFF.map(s=>({...s,..._lifeFor(s)})),
     ...dynamicHRStaff
   ];
   const shiftMap={'8AM-5PM':['08:00','17:00'],'7AM-4PM':['07:00','16:00'],'9AM-6PM':['09:00','18:00'],'9AM-5PM':['09:00','17:00'],'8AM-4PM':['08:00','16:00']};
@@ -4643,6 +4691,7 @@ const _origStartApp = window.startApp || startApp;
 async function startAppExt_safe(){
   await _origStartApp();
   await loadPublishedSchedules();
+  await loadSignatoryFromStorage();
   if(typeof renderNotifListExt==='function')window.renderNotifList = renderNotifListExt;
   if(typeof detectChangesWithSched==='function')window.detectChanges = detectChangesWithSched;
 }
