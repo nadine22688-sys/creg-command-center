@@ -1607,7 +1607,7 @@ async function syncCalendarAfterPublish(monthKey,eff){
     'pahila, ian':'PAHILA','pasay, gladize':'PASAY','solis, mary':'SOLIS',
     'taguiam, john':'TAGUIAM','villareal, hans':'VILLAREAL','caringal, nadine':'CARINGAL'};
   Object.assign(_nick,_lf);
-  staffList.forEach(s=>{const k=s.name.trim().toLowerCase();if(!_nick[k])_nick[k]=s.name.toUpperCase().replace(/\s+/g,'_');});
+  staffList.forEach(s=>{const k=s.name.trim().toLowerCase();if(!_nick[k])_nick[k]=s.name.toUpperCase().replace(/[\s,]+/g,'_');});
   const toApprove=requests.filter(r=>{
     if(r.status==='approved')return false;
     if(!r.date)return false;
@@ -2914,7 +2914,7 @@ function buildSchedEngine(year,month,allReqs,prevPub,fullStaffRoster,curPub){
   // Also initialize dynamic staff
   if(staffList&&staffList.length){
     staffList.forEach(sl=>{
-      const k=sl.name.toUpperCase().replace(/\s+/g,'_');
+      const k=sl.name.toUpperCase().replace(/[\s,]+/g,'_');
       if(!prior[k])prior[k]=0;
     });
   }
@@ -3028,6 +3028,28 @@ function buildSchedEngine(year,month,allReqs,prevPub,fullStaffRoster,curPub){
       const bridgeSched={...prevPub.sched[dk]};
       const bridgeBrk={...(prevPub.brkSched?.[dk]||{})};
       const bridgeTask={...(prevPub.taskSched?.[dk]||{})};
+
+      // ── KEY NORMALIZATION ─────────────────────────────────────────────────
+      // Previous published data may store dynamic staff under an old key format
+      // (e.g. "VILLALUZ,_EDNALYN" with comma). Remap any such keys to the current
+      // standard key (comma removed) so the same person isn't rendered twice.
+      const _remapKey=(obj)=>{
+        allSchedStaff.forEach(x=>{
+          if(obj[x.key]!==undefined) return; // already correct key
+          // Look for an old-format key that normalizes to the same person
+          const norm=k=>k.toUpperCase().replace(/[^A-Z0-9]/g,'');
+          const target=norm(x.key);
+          Object.keys(obj).forEach(oldK=>{
+            if(oldK!==x.key&&norm(oldK)===target){
+              obj[x.key]=obj[oldK];
+              delete obj[oldK];
+            }
+          });
+        });
+      };
+      _remapKey(bridgeSched);
+      _remapKey(bridgeBrk);
+      _remapKey(bridgeTask);
 
       // ── NEW HIRE INJECTION ────────────────────────────────────────────────
       // If a new staff member's date_hired falls ON or BEFORE this bridge day,
@@ -3451,7 +3473,7 @@ async function runGenerator(){
     // Add staffList entries for dynamic/new staff
     staffList.forEach(s=>{
       const key=s.name.trim().toLowerCase();
-      if(!dynNick[key])dynNick[key]=s.name.toUpperCase().replace(/\s+/g,'_');
+      if(!dynNick[key])dynNick[key]=s.name.toUpperCase().replace(/[\s,]+/g,'_');
     });
     const allReqs=raw.map(r=>({...r,staffKey:dynNick[r.staff?.trim().toLowerCase()],type:(r.type||'').split(' ')[0].toUpperCase(),date:String(r.date||'').slice(0,10)})).filter(r=>r.staffKey&&r.date);
     document.getElementById('gen-alerts').innerHTML='<div class="alert-box info">Building schedule…</div>';
@@ -3870,7 +3892,25 @@ function deriveStaffFromSched(days,sched){
     });
   });
   const hasRealData=k=>days.some(d=>{const v=sched[dsS(d)]?.[k];return v!==undefined&&v!==null&&v!=='';});
-  return [...staffRef.values()].filter(s=>hasRealData(s.key)).sort((a,b)=>{
+  let list=[...staffRef.values()].filter(s=>hasRealData(s.key));
+  // ── DEDUPE SAFETY NET ─────────────────────────────────────────────────────
+  // Collapse rows that are the same person under different key formats
+  // (e.g. "VILLALUZ,_EDNALYN" vs "VILLALUZ_EDNALYN"). Normalize by stripping
+  // all non-alphanumeric chars from the key; keep the row that has the most data.
+  const norm=k=>k.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const dataCount=k=>days.reduce((n,d)=>{const v=sched[dsS(d)]?.[k];return n+((v!==undefined&&v!==null&&v!=='')?1:0);},0);
+  const byNorm=new Map();
+  list.forEach(s=>{
+    const nk=norm(s.key);
+    const existing=byNorm.get(nk);
+    if(!existing){byNorm.set(nk,s);}
+    else{
+      // Keep whichever key has more actual schedule data
+      if(dataCount(s.key)>dataCount(existing.key)) byNorm.set(nk,s);
+    }
+  });
+  list=[...byNorm.values()];
+  return list.sort((a,b)=>{
     if(a.isTL&&!b.isTL)return 1;if(!a.isTL&&b.isTL)return -1;return a.nick.localeCompare(b.nick);
   });
 }
@@ -4096,7 +4136,7 @@ function downloadHR(forcePublished){
       return !coreNicks.has(n)&&!coreFulls.has(n);
     })
     .map(sl=>({
-      key:sl.name.toUpperCase().replace(/\s+/g,'_'),
+      key:sl.name.toUpperCase().replace(/[\s,]+/g,'_'),
       id:sl.employee_id||'',
       hrName:sl.hr_full_name||sl.name.toUpperCase(),
       isTL:false,
