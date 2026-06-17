@@ -2388,13 +2388,27 @@ const RAD_ROT=[
 ];
 function getRadStaff(dk){for(const r of RAD_ROT)if(!r.done&&dk>=r.start&&dk<=r.end)return r.key;return null;}
 
-// Email rotation
-const EMAIL_ORD=['PAHILA','SOLIS','ANZURES'];
+// Email rotation — date-aware cutover.
+// Before Aug 1 2026: original rotation (Anzures auto-skipped since she has no data
+//   after resigning Jun 9; July email was handled manually by Pahila/Solis).
+// From Aug 1 2026 onward: Anzures replaced by Villaluz, Ednalyn.
+const EMAIL_ORD_OLD=['PAHILA','SOLIS','ANZURES'];
+const EMAIL_ORD_NEW=['PAHILA','SOLIS','VILLALUZ_EDNALYN'];
+const EMAIL_SWITCH_DATE='2026-08-01';
+// EMAIL_ORD kept for any legacy reference — points to the current (new) order
+const EMAIL_ORD=EMAIL_ORD_NEW;
+function getEmailOrdForDate(dk){return (dk>=EMAIL_SWITCH_DATE)?EMAIL_ORD_NEW:EMAIL_ORD_OLD;}
 function getMonOf(d){const dw=d.getUTCDay();const m=new Date(d);m.setUTCDate(d.getUTCDate()-(dw===0?6:dw-1));return m;}
-function getEmailStaff(mon){const anc=new Date('2026-01-05T00:00:00Z');const wk=Math.floor((mon-anc)/(7*86400000));return EMAIL_ORD[((wk%3)+3)%3];}
+function getEmailStaff(mon){
+  const anc=new Date('2026-01-05T00:00:00Z');const wk=Math.floor((mon-anc)/(7*86400000));
+  // Pick the rotation array based on the week's date
+  const dk=mon.toISOString().slice(0,10);
+  const ord=getEmailOrdForDate(dk);
+  return ord[((wk%3)+3)%3];
+}
 
-// Consent rotation (starts June 2026, alternates Basilio/Anzures)
-function getConsentPerson(year,month){if(year<2026||(year===2026&&month<6))return null;return['BASILIO','ANZURES'][((year-2026)*12+(month-6))%2];}
+// Consent rotation — alternates Basilio / Pasay monthly (Anzures replaced after resignation)
+function getConsentPerson(year,month){if(year<2026||(year===2026&&month<6))return null;return['BASILIO','PASAY'][((year-2026)*12+(month-6))%2];}
 function getConsentDay(days,sched,person){if(!person)return null;for(const d of days){if(sdS(d)||sdH(d))continue;const dk=dsS(d);if(sched[dk]?.[person]&&!isAbsV(sched[dk][person]))return dk;}return null;}
 
 // Task definitions
@@ -2500,14 +2514,13 @@ function assignTasks(day,sched,email,rad,isShred,isConsent,consentPerson){
   if(sdS(day)||sdH(day))return tasks;
   const here=k=>sched&&sched[k]&&!isAbsV(sched[k]);
 
-  // Radiology releasing
-  if(rad&&here(rad))tasks[rad]='RADIOLOGY';
+  // Radiology releasing — REMOVED (training completed). No auto-assignment.
 
-  // LOA/Counter — Basilio primary, Pahila fallback, Anzures 2nd fallback
+  // LOA/Counter — Basilio primary, Pahila 1st fallback, Calica 2nd fallback
   if(!tasks['BASILIO']){
     if(here('BASILIO'))tasks['BASILIO']='LOA';
     else if(here('PAHILA')&&!tasks['PAHILA'])tasks['PAHILA']='LOA';
-    else if(here('ANZURES')&&!tasks['ANZURES'])tasks['ANZURES']='LOA';
+    else if(here('CALICA')&&!tasks['CALICA'])tasks['CALICA']='LOA';
   }
 
   // Shred/Counter — Calica on first 7+ day of each week
@@ -2520,11 +2533,13 @@ function assignTasks(day,sched,email,rad,isShred,isConsent,consentPerson){
   if(isConsent&&consentPerson&&here(consentPerson)&&!tasks[consentPerson])
     tasks[consentPerson]='CONSENT';
 
-  // Email/Counter — weekly rotation
+  // Email/Counter — weekly rotation (date-aware: uses new rotation from Aug 1)
+  const _dk=dsS(day);
+  const _emailOrd=getEmailOrdForDate(_dk);
   let ek=email;
-  for(let i=0;i<EMAIL_ORD.length;i++){
+  for(let i=0;i<_emailOrd.length;i++){
     if(here(ek)&&!tasks[ek]){tasks[ek]='EMAIL';break;}
-    ek=EMAIL_ORD[(EMAIL_ORD.indexOf(ek)+1)%EMAIL_ORD.length];
+    ek=_emailOrd[(_emailOrd.indexOf(ek)+1)%_emailOrd.length];
   }
 
   // Counter — everyone else present
