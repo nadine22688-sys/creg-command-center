@@ -2078,7 +2078,7 @@ function refreshExisting(){
         <div>
           <div class="ex-nm">${r.staff} — ${r.type} ${ap?'<span class="ex-ap">✓ APPROVED</span>':''}</div>
           ${r.reason?`<div class="ex-note">${r.reason}</div>`:''}
-          <div class="ex-filed">Filed ${fmtShort(r.filed_at)}</div>
+          <div class="ex-filed">${(r.filed_at&&r.filed_at.slice(0,10)!==r.date)?'Filed '+fmtShort(r.filed_at):''}</div>
         </div>
         <div class="ex-actions">${apBtn}${delBtn}</div>
       </div>`;
@@ -2099,7 +2099,10 @@ async function submitR(){
   const btn=document.getElementById('submit-btn'),ind=document.getElementById('saving-ind');
   btn.disabled=true;ind.style.display='flex';
   try{
-    const saved=await saveReq({date:pendingDate,staff:normalizeStaffName(staff),type:selType,reason:rsn,status:'pending'});
+    // Stamp the ACTUAL submission date/time (not the requested date) so "Filed"
+    // always reflects when the request was really made — never a future date.
+    const nowIso=new Date().toISOString();
+    const saved=await saveReq({date:pendingDate,staff:normalizeStaffName(staff),type:selType,reason:rsn,status:'pending',filed_at:nowIso,filed_date:nowIso.slice(0,10)});
     const newR=Array.isArray(saved)?saved[0]:saved;
     requests.push(newR);
     if(isAdmin)lastKnownIds.add(newR.id);
