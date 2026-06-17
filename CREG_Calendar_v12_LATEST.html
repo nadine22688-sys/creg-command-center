@@ -4484,6 +4484,32 @@ function getDaysYear(yr){
   return days;
 }
 
+// Build the current analytics staff roster: active core staff (excludes resigned
+// like Alleli) + active dynamic new hires (includes Ednalyn). Uses the full roster
+// (window.allStaffForGen, which has lifecycle dates) to decide who is active now.
+function getAnalyticsStaff(){
+  const roster=(window.allStaffForGen&&window.allStaffForGen.length)?window.allStaffForGen:(staffList||[]);
+  const byName=new Map(roster.map(sl=>[sl.name.toLowerCase(),sl]));
+  const out=[];
+  // 1. Core SCHED_STAFF — include only if not resigned (active in roster, or not listed = assume active)
+  SCHED_STAFF.filter(s=>!s.isTL).forEach(s=>{
+    const sl=byName.get(s.nick.toLowerCase())||byName.get(s.full.toLowerCase())||null;
+    const isActive=sl?(sl.active!==false&&sl.active!=='false'&&!sl.date_resigned):true;
+    if(isActive)out.push({key:s.key,nick:s.nick});
+  });
+  // 2. Dynamic new hires in roster not already in SCHED_STAFF (e.g. Ednalyn)
+  roster.forEach(sl=>{
+    if(sl.active===false||sl.active==='false'||sl.date_resigned)return;
+    const inCore=SCHED_STAFF.some(s=>s.nick.toLowerCase()===sl.name.toLowerCase()||s.full.toLowerCase()===sl.name.toLowerCase());
+    const isTL=sl.name.toLowerCase().includes('caringal')||sl.name.toLowerCase()==='nadz';
+    if(!inCore&&!isTL){
+      const key=sl.name.toUpperCase().replace(/[\s,]+/g,'_');
+      out.push({key,nick:sl.name});
+    }
+  });
+  return out;
+}
+
 function renderAnalytics(){
   // Admin-only tab (tab is hidden for non-admin via applyIdentityUI)
   const yr=parseInt(document.getElementById('an-year')?.value||2026);
@@ -4612,9 +4638,17 @@ function _drawPie(vl,sl,bdl,el){
 function _drawBar(unplanned){
   const r=_getCanvasCtx('an-bar',200);if(!r)return;
   const{ctx,W,H}=r;
-  const rot=SCHED_STAFF.filter(s=>!s.isTL);
+  const rot=getAnalyticsStaff();
+  const _matchKey=(rStaff,key,nick)=>{
+    if(!rStaff)return false;
+    const sk=SCHED_NICK[rStaff.trim().toLowerCase()];
+    if(sk&&sk===key)return true;
+    // Fallback for dynamic new hires: match on name → key
+    return rStaff.trim().toUpperCase().replace(/[\s,]+/g,'_')===key
+      ||rStaff.trim().toLowerCase()===nick.toLowerCase();
+  };
   const nicks=rot.map(s=>s.nick.split(',')[0].trim());
-  const counts=rot.map(s=>unplanned.filter(r2=>r2.staff&&SCHED_NICK[r2.staff.trim().toLowerCase()]===s.key).length);
+  const counts=rot.map(s=>unplanned.filter(r2=>_matchKey(r2.staff,s.key,s.nick)).length);
   const max=Math.max(...counts,1);
   const pad={t:10,r:10,b:40,l:30};
   const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
@@ -4644,10 +4678,17 @@ function _drawBar(unplanned){
 function _drawReliability(unplanned,shrinkage){
   const el=document.getElementById('an-reliability');if(!el)return;
   const workDays=260;
+  const _matchKey=(rStaff,key,nick)=>{
+    if(!rStaff)return false;
+    const sk=SCHED_NICK[rStaff.trim().toLowerCase()];
+    if(sk&&sk===key)return true;
+    return rStaff.trim().toUpperCase().replace(/[\s,]+/g,'_')===key
+      ||rStaff.trim().toLowerCase()===nick.toLowerCase();
+  };
   el.innerHTML='<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Reliability score based on SL+EL only. VL/BDL = planned leave, not counted.</div>'+
-  SCHED_STAFF.filter(s=>!s.isTL).map(s=>{
-    const unplAbs=unplanned.filter(r=>r.staff&&SCHED_NICK[r.staff.trim().toLowerCase()]===s.key).length;
-    const shrinkAbs=shrinkage.filter(r=>r.staff&&SCHED_NICK[r.staff.trim().toLowerCase()]===s.key).length;
+  getAnalyticsStaff().map(s=>{
+    const unplAbs=unplanned.filter(r=>_matchKey(r.staff,s.key,s.nick)).length;
+    const shrinkAbs=shrinkage.filter(r=>_matchKey(r.staff,s.key,s.nick)).length;
     const score=Math.max(0,Math.round(100-(unplAbs/workDays)*100*8));
     const color=score>=98?'#059669':score>=90?'#D97706':'#DC2626';
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
@@ -4683,8 +4724,15 @@ function _drawWarnings(filtered,unplanned){
 
 function _drawApproval(filtered){
   const el=document.getElementById('an-approval');if(!el)return;
-  el.innerHTML=SCHED_STAFF.filter(s=>!s.isTL).map(s=>{
-    const reqs=filtered.filter(r=>r.staff&&SCHED_NICK[r.staff.trim().toLowerCase()]===s.key);
+  const _matchKey=(rStaff,key,nick)=>{
+    if(!rStaff)return false;
+    const sk=SCHED_NICK[rStaff.trim().toLowerCase()];
+    if(sk&&sk===key)return true;
+    return rStaff.trim().toUpperCase().replace(/[\s,]+/g,'_')===key
+      ||rStaff.trim().toLowerCase()===nick.toLowerCase();
+  };
+  el.innerHTML=getAnalyticsStaff().map(s=>{
+    const reqs=filtered.filter(r=>_matchKey(r.staff,s.key,s.nick));
     const ap=reqs.filter(r=>r.status==='approved').length;
     const rate=reqs.length?Math.round(ap/reqs.length*100):100;
     const color=rate>=80?'#059669':rate>=50?'#D97706':'#DC2626';
@@ -4700,9 +4748,16 @@ function _buildReport(filtered,vl,sl,bdl,el,yr,mv,unplannedRate,shrinkRate){
   const reportEl=document.getElementById('an-report');if(!reportEl)return;
   const label=mv==='all'?`${yr} Full Year`:`${MONTHS[parseInt(mv)]} ${yr}`;
   const now=new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
-  const topStaff=SCHED_STAFF.filter(s=>!s.isTL).map(s=>({
+  const topStaff=getAnalyticsStaff().map(s=>({
     nick:s.nick.split(',')[0].trim(),
-    count:filtered.filter(r=>(r.type==='SL'||r.type==='EL')&&r.staff&&SCHED_NICK[r.staff.trim().toLowerCase()]===s.key).length
+    count:filtered.filter(r=>{
+      if(r.type!=='SL'&&r.type!=='EL')return false;
+      if(!r.staff)return false;
+      const sk=SCHED_NICK[r.staff.trim().toLowerCase()];
+      if(sk&&sk===s.key)return true;
+      return r.staff.trim().toUpperCase().replace(/[\s,]+/g,'_')===s.key
+        ||r.staff.trim().toLowerCase()===s.nick.toLowerCase();
+    }).length
   })).sort((a,b)=>b.count-a.count);
   reportEl.textContent=
 `CENTRAL REGISTRATION — ATTENDANCE REPORT
