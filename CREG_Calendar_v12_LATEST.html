@@ -3110,6 +3110,21 @@ function buildSchedEngine(year,month,allReqs,prevPub,fullStaffRoster,curPub){
           else if(sdSat(day)){bridgeSched[x.key]=x.satShift||'7AM-4PM';}
           else{bridgeSched[x.key]=x.wdShift||'8AM-5PM';}
           bridgeTask[x.key]='COUNTER'; // default task — admin can override
+          // Assign a break too (was previously skipped → blank break cell).
+          // Fixed-break staff get their fixed slot; others get a sensible default
+          // that balances against breaks already used on this bridge day.
+          if(!sdS(day)&&!sdH(day)){
+            if(x.fixedBreak){
+              bridgeBrk[x.key]=x.fixedBreak;
+            }else{
+              // Count existing break slots on this day, pick the least-used flexible slot
+              const _slotCt={'10AM':0,'11AM':0,'12NN':0,'1PM':0};
+              Object.values(bridgeBrk).forEach(b=>{if(b&&_slotCt[b]!==undefined)_slotCt[b]++;});
+              const _avail=['10AM','11AM','12NN'];
+              const _pick=_avail.reduce((a,b)=>_slotCt[a]<=_slotCt[b]?a:b);
+              bridgeBrk[x.key]=_pick;
+            }
+          }
         }else if(!activeToday&&wasInPrevPub){
           // Separated staff: was in June, gone now — blank them out
           bridgeSched[x.key]='';
