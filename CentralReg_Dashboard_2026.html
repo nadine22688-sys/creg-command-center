@@ -143,11 +143,14 @@ canvas{display:block;max-height:220px;}
 .kc.vlt::after{background:linear-gradient(90deg,var(--violet),#9b5cf6);}
 .kc.org::after{background:linear-gradient(90deg,var(--orange),#e08020);}
 .kc.tel::after{background:linear-gradient(90deg,var(--teal),#14a8a8);}
+.kc.navy::after{background:linear-gradient(90deg,#0c3a5e,#1a5a85);}
+.kc.slate::after{background:linear-gradient(90deg,#5683a6,#7da6c6);}
 .kl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;font-weight:700;margin-top:5px;}
 .kv{font-size:26px;font-weight:800;margin:5px 0 3px;line-height:1;letter-spacing:-.5px;}
 .ks{font-size:9px;color:var(--muted);}
 .kc.sky .kv{color:var(--sky);}.kc.gld .kv{color:var(--gold);}.kc.mnt .kv{color:var(--mint);}
 .kc.rse .kv{color:var(--rose);}.kc.vlt .kv{color:var(--violet);}.kc.org .kv{color:var(--orange);}.kc.tel .kv{color:var(--teal);}
+.kc.navy .kv{color:#0c3a5e;}.kc.slate .kv{color:#5683a6;}
 
 /* ── YoY badges ── */
 .yoy{
@@ -619,13 +622,13 @@ var DB = {
 <div class="main ops-view">
   <div class="sec">Census Overview <span class="sec-note" id="kpi-lbl">Year to Date — 2026</span></div>
   <div class="g7" id="kpiStrip">
-    <div class="kc sky"><span class="ktooltip">21,468 vs 19,715 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Patient Census</div><div class="kv">21,468<span class="yoy up">▲8.9%</span></div><div class="ks">Jan–Jun 2026</div></div>
-    <div class="kc gld"><span class="ktooltip">28,578 vs 26,612 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Counter Tx</div><div class="kv">28,578<span class="yoy up">▲7.4%</span></div><div class="ks">Jan–Jun 2026</div></div>
-    <div class="kc mnt"><span class="ktooltip">14,767 vs 14,057 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Registered &amp; Billed</div><div class="kv">14,767<span class="yoy up">▲5.1%</span></div><div class="ks">Jan–Jun 2026</div></div>
-    <div class="kc rse"><span class="ktooltip">8,124 vs 7,321 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">For Scheduling</div><div class="kv">8,124<span class="yoy up">▲11.0%</span></div><div class="ks">Jan–Jun 2026</div></div>
-    <div class="kc org"><span class="ktooltip">2,944 vs 3,019 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Inquiry</div><div class="kv">2,944<span class="yoy dn">▼2.5%</span></div><div class="ks">Jan–Jun 2026</div></div>
-    <div class="kc vlt"><span class="ktooltip">2,743 vs 2,215 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Results</div><div class="kv">2,743<span class="yoy up">▲23.8%</span></div><div class="ks">Jan–Jun 2026</div></div>
-    <div class="kc tel"><div class="kl">Median Tx Time</div><div class="kv">8:24<span class="yoy up">▼8.9%</span></div><div class="ks">2026 YTD team median</div></div>
+    <div class="kc navy"><span class="ktooltip">21,468 vs 19,715 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Patient Census</div><div class="kv">21,468<span class="yoy up">▲8.9%</span></div><div class="ks">Jan–Jun 2026</div></div>
+    <div class="kc slate"><span class="ktooltip">28,578 vs 26,612 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Counter Tx</div><div class="kv">28,578<span class="yoy up">▲7.4%</span></div><div class="ks">Jan–Jun 2026</div></div>
+    <div class="kc sky"><span class="ktooltip">14,767 vs 14,057 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Registered &amp; Billed</div><div class="kv">14,767<span class="yoy up">▲5.1%</span></div><div class="ks">Jan–Jun 2026</div></div>
+    <div class="kc gld"><span class="ktooltip">8,124 vs 7,321 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">For Scheduling</div><div class="kv">8,124<span class="yoy up">▲11.0%</span></div><div class="ks">Jan–Jun 2026</div></div>
+    <div class="kc mnt"><span class="ktooltip">2,944 vs 3,019 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Inquiry</div><div class="kv">2,944<span class="yoy dn">▼2.5%</span></div><div class="ks">Jan–Jun 2026</div></div>
+    <div class="kc rse"><span class="ktooltip">2,743 vs 2,215 — Jan–Jun 2025 (Jun day-matched: first 6 days)</span><div class="kl">Results</div><div class="kv">2,743<span class="yoy up">▲23.8%</span></div><div class="ks">Jan–Jun 2026</div></div>
+    <div class="kc vlt"><div class="kl">Median Tx Time</div><div class="kv">8:24<span class="yoy up">▼8.9%</span></div><div class="ks">2026 YTD team median</div></div>
 </div>
   <div class="g2">
     <div class="card"><div class="ct"><span id="daily-title">Monthly Patient Census</span> <span class="ct-r" id="daily-lbl">2026 YTD — Monthly Totals</span></div><canvas id="dailyChart" height="220" style="max-height: 220px; width: 599px; display: block; box-sizing: border-box; height: 220px;" width="599"></canvas></div>
@@ -1139,13 +1142,13 @@ function buildKPIs(){
   const lastM=D.months26[D.months26.length-1];
   const sub=dm==='YTD'?(yr===2026?'Jan–'+lastM+' 2026':`Full Year ${yr}`):`${dm} ${yr}`;
   document.getElementById('kpiStrip').innerHTML=`
-    <div class="kc sky">${tpCensus?'<span class="ktooltip">'+tpCensus+'</span>':''}<div class="kl">Patient Census</div><div class="kv">${fmt(d.patients)}${bp}</div><div class="ks">${sub}</div></div>
-    <div class="kc gld">${tpTot?'<span class="ktooltip">'+tpTot+'</span>':''}<div class="kl">Counter Tx</div><div class="kv">${fmt(tot)}${bt}</div><div class="ks">${sub}</div></div>
-    <div class="kc mnt">${tpRb?'<span class="ktooltip">'+tpRb+'</span>':''}<div class="kl">Registered &amp; Billed</div><div class="kv">${fmt(d.rb)}${br}</div><div class="ks">${sub}</div></div>
-    <div class="kc rse">${tpSched?'<span class="ktooltip">'+tpSched+'</span>':''}<div class="kl">For Scheduling</div><div class="kv">${fmt(d.sched)}${bs}</div><div class="ks">${sub}</div></div>
-    <div class="kc org">${tpInq?'<span class="ktooltip">'+tpInq+'</span>':''}<div class="kl">Inquiry</div><div class="kv">${fmt(d.inquiry)}${bi}</div><div class="ks">${sub}</div></div>
-    <div class="kc vlt">${tpRes?'<span class="ktooltip">'+tpRes+'</span>':''}<div class="kl">Results</div><div class="kv">${fmt(d.results)}${bre}</div><div class="ks">${sub}</div></div>
-    <div class="kc tel"><div class="kl">Median Tx Time</div><div class="kv">${medDisplay}${medBadge}</div><div class="ks">${medSub}</div></div>
+    <div class="kc navy">${tpCensus?'<span class="ktooltip">'+tpCensus+'</span>':''}<div class="kl">Patient Census</div><div class="kv">${fmt(d.patients)}${bp}</div><div class="ks">${sub}</div></div>
+    <div class="kc slate">${tpTot?'<span class="ktooltip">'+tpTot+'</span>':''}<div class="kl">Counter Tx</div><div class="kv">${fmt(tot)}${bt}</div><div class="ks">${sub}</div></div>
+    <div class="kc sky">${tpRb?'<span class="ktooltip">'+tpRb+'</span>':''}<div class="kl">Registered &amp; Billed</div><div class="kv">${fmt(d.rb)}${br}</div><div class="ks">${sub}</div></div>
+    <div class="kc gld">${tpSched?'<span class="ktooltip">'+tpSched+'</span>':''}<div class="kl">For Scheduling</div><div class="kv">${fmt(d.sched)}${bs}</div><div class="ks">${sub}</div></div>
+    <div class="kc mnt">${tpInq?'<span class="ktooltip">'+tpInq+'</span>':''}<div class="kl">Inquiry</div><div class="kv">${fmt(d.inquiry)}${bi}</div><div class="ks">${sub}</div></div>
+    <div class="kc rse">${tpRes?'<span class="ktooltip">'+tpRes+'</span>':''}<div class="kl">Results</div><div class="kv">${fmt(d.results)}${bre}</div><div class="ks">${sub}</div></div>
+    <div class="kc vlt"><div class="kl">Median Tx Time</div><div class="kv">${medDisplay}${medBadge}</div><div class="ks">${medSub}</div></div>
 `;
 }
 
