@@ -29,6 +29,7 @@ body.dark{
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--tx);font-family:var(--fh);font-size:13px;min-height:100vh;}
 canvas{display:block;max-height:220px;}
+#pirStaffChart{max-height:none!important;}
 .ch-sm canvas{max-height:130px;}
 .ch-md canvas{max-height:180px;}
 .ch-lg canvas{max-height:220px;}
@@ -567,7 +568,8 @@ var DB = {
   months26:["Jan","Feb","Mar","Apr","May"],
   arrLabels:["6-7AM","7-8AM","8-9AM","9-10AM","10-11AM","11AM-12PM","12-1PM","1-2PM","2-3PM","3-4PM","4-5PM","5-6PM"],
   pirRate:{'2025':[0.11,0.47,0.36,0.59,0.35,0.28,0.5,0.13,0.1,0.0,0.0,0.0],'2026':[0.43,0.29,0.44,0.24,null,null,null,null,null,null,null,null]},
-  pirByStaff26:{"Alleli Anzures":{"Jan":0.27,"Feb":0.45,"Mar":0.0,"ytd":0.24},"Ian Timothy Pahila":{"Jan":0.0,"Feb":0.25,"Mar":0.0,"ytd":0.083},"Gladize Grace Pasay":{"Jan":0.0,"Feb":0.0,"Mar":0.26,"ytd":0.087},"Legenn Nezer Calica":{"Jan":0.24,"Feb":0.0,"Mar":1.11,"ytd":0.45},"Moira Basilio":{"Jan":0.0,"Feb":0.0,"Mar":0.0,"ytd":0.0},"Hans Christian Villareal":{"Jan":0.36,"Feb":0.34,"Mar":0.0,"ytd":0.233},"Mary Aileen Solis":{"Jan":0.85,"Feb":0.42,"Mar":0.78,"ytd":0.683},"John Adrian Taguiam":{"Jan":2.58,"Feb":1.25,"Mar":2.28,"ytd":2.037},"Nadine Caringal":{"Jan":0.0,"Feb":0.0,"Mar":0.0,"ytd":0.0},"Ednalyn Espinosa":{"Jan":0.0,"Feb":0.0,"Mar":0.0,"ytd":0.0}}
+  pirByStaff25:{"Alleli Anzures":{"Jan":0,"Feb":0.57,"Mar":0.26,"Apr":0.6,"May":0,"Jun":0.8,"Jul":0,"Aug":0.59,"Sep":0,"Oct":0,"Nov":0,"Dec":0,"ytd":0.235},"Ednalyn Espinosa":{"Jan":0,"Feb":0,"Mar":0,"Apr":0,"May":0,"Jun":0,"Jul":0,"Aug":0,"Sep":0,"Oct":0,"Nov":0,"Dec":0,"ytd":0},"Gladize Grace Pasay":{"Jan":0,"Feb":0,"Mar":0,"Apr":1.16,"May":0.33,"Jun":0.53,"Jul":0,"Aug":0,"Sep":0,"Oct":0,"Nov":0,"Dec":0,"ytd":0.168},"Hans Christian Villareal":{"Jan":0,"Feb":1.12,"Mar":1.51,"Apr":1.63,"May":1.45,"Jun":0,"Jul":1.24,"Aug":0,"Sep":0.27,"Oct":0,"Nov":0,"Dec":0,"ytd":0.602},"Ian Timothy Pahila":{"Jan":0,"Feb":0.31,"Mar":0.26,"Apr":0.32,"May":0.25,"Jun":0,"Jul":0,"Aug":0.33,"Sep":0.22,"Oct":0,"Nov":0,"Dec":0,"ytd":0.141},"Jeneeva Custodio":{"Jan":0,"Feb":0,"Mar":0,"Apr":0,"May":0,"Jun":0,"Jul":0,"Aug":0,"Sep":0,"Oct":0,"Nov":0,"Dec":0,"ytd":0},"John Adrian Taguiam":{"Jan":0,"Feb":0,"Mar":0,"Apr":0,"May":0,"Jun":0,"Jul":0,"Aug":0,"Sep":0,"Oct":0,"Nov":0,"Dec":0,"ytd":0},"Legenn Nezer Calica":{"Jan":0.2,"Feb":0.25,"Mar":0,"Apr":0.29,"May":0.55,"Jun":0.25,"Jul":0.84,"Aug":0,"Sep":0.2,"Oct":0,"Nov":0,"Dec":0,"ytd":0.215},"Mary Aileen Solis":{"Jan":0.37,"Feb":0,"Mar":0,"Apr":0,"May":0,"Jun":0.49,"Jul":0.37,"Aug":0,"Sep":0.25,"Oct":0,"Nov":0,"Dec":0,"ytd":0.123},"Moira Basilio":{"Jan":0.28,"Feb":0.26,"Mar":0.7,"Apr":0,"May":0,"Jun":0,"Jul":0,"Aug":0,"Sep":0,"Oct":0,"Nov":0,"Dec":0,"ytd":0.103},"Nadine Caringal":{"Jan":0,"Feb":0,"Mar":0,"Apr":0,"May":0,"Jun":0,"Jul":0,"Aug":0,"Sep":0,"Oct":0,"Nov":0,"Dec":0,"ytd":0}},
+  pirByStaff26:{"Alleli Anzures":{"Jan":0.27,"Feb":0.45,"Mar":0,"ytd":0.24},"Ednalyn Espinosa":{"Jan":0,"Feb":0,"Mar":0,"ytd":0},"Gladize Grace Pasay":{"Jan":0,"Feb":0,"Mar":0.26,"ytd":0.087},"Hans Christian Villareal":{"Jan":0.36,"Feb":0.34,"Mar":0,"ytd":0.233},"Ian Timothy Pahila":{"Jan":0,"Feb":0.25,"Mar":0,"ytd":0.083},"John Adrian Taguiam":{"Jan":2.58,"Feb":1.25,"Mar":2.28,"ytd":2.037},"Legenn Nezer Calica":{"Jan":0.24,"Feb":0,"Mar":1.11,"ytd":0.45},"Mary Aileen Solis":{"Jan":0.85,"Feb":0.42,"Mar":0.78,"ytd":0.683},"Moira Basilio":{"Jan":0,"Feb":0,"Mar":0,"ytd":0},"Nadine Caringal":{"Jan":0,"Feb":0,"Mar":0,"ytd":0}}
 };
 </script>
 <!-- HEADER -->
@@ -663,7 +665,7 @@ var DB = {
   <div class="card gf" id="pirStaffCard" style="display:none">
     <div class="ct">PIR by Staff Member <span class="ct-r" id="pirStaff-note">2026 YTD · lower is better</span></div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.5">⚠️ Individual error rates — interpret with caution. Low-volume staff (recent hires) can show inflated rates from a single incident. For coaching context only.</div>
-    <canvas id="pirStaffChart" height="200" style="max-height:240px;width:100%"></canvas>
+    <div id="pirStaffWrap" style="position:relative;height:340px;width:100%"><canvas id="pirStaffChart"></canvas></div>
   </div>
 
   <div class="sec">Patient Satisfaction Index <span class="sec-note">Source: Patient Relations Office</span></div>
@@ -844,7 +846,7 @@ let charts={},view='ops',month='YTD',year=2026;
   try{
     // Version stamp — bump when data format changes so old/corrupt saves are discarded.
     // v3 = SI time-decimal parsing fix + corruption validation (May 2026).
-    const STORAGE_VERSION = 'v3';
+    const STORAGE_VERSION = 'v6';
     const savedVer = localStorage.getItem('cregDashboardVer');
     if(savedVer !== STORAGE_VERSION){
       // Version changed or missing — wipe ALL saved data and start fresh from built-in DB
@@ -873,6 +875,27 @@ let charts={},view='ops',month='YTD',year=2026;
           });
           corrupt = allVals.some(v=> v!=null && (String(v).includes('NaN') || !/^\d+:\d{2}$/.test(String(v))) );
         }catch(e){ corrupt = true; }
+        // Also auto-fix inflated per-staff PIR. Real PIR is 0-3%.
+        // A cached value >3.5% is almost certainly ×100 inflated (e.g. 8.6 = 0.086×100).
+        try{
+          ['pirByStaff25','pirByStaff26'].forEach(key=>{
+            const m=parsed[key]; if(!m) return;
+            Object.keys(m).forEach(name=>{
+              Object.keys(m[name]).forEach(mo=>{
+                let val=m[name][mo];
+                if(typeof val==='number'){
+                  // Divide by 100 repeatedly until it's in the sane 0-3.5% range
+                  while(val>3.5){ val=Math.round(val/100*1000)/1000; }
+                  m[name][mo]=val;
+                }
+              });
+            });
+          });
+          ['2025','2026'].forEach(y=>{
+            const arr=parsed.pirRate&&parsed.pirRate[y];
+            if(Array.isArray(arr)) arr.forEach((v,i)=>{ let x=v; if(typeof x==='number'){ while(x>3.5){x=Math.round(x/100*1000)/1000;} arr[i]=x; } });
+          });
+        }catch(e){}
         if(corrupt){
           localStorage.removeItem('cregDashboardDB');
           localStorage.removeItem('cregDashboardSaved');
@@ -1444,36 +1467,53 @@ function buildPIR(){
 function buildPIRStaff(yr){
   const card=document.getElementById('pirStaffCard');
   if(!card) return;
-  // Only show for 2026 (per-staff data exists), and only in Ops view
-  if(yr!==2026 || view!=='ops' || !D.pirByStaff26){ card.style.display='none'; return; }
+  // Show in Ops view only. Works for both 2025 and 2026 now.
+  const pirMap = yr===2025 ? D.pirByStaff25 : D.pirByStaff26;
+  if(view!=='ops' || year===0 || !pirMap){ card.style.display='none'; return; }
   card.style.display='';
   const c=C();
   const mkey=month==='YTD'?'ytd':month;
-  // Build staff list with selected-period PIR, sorted highest first
-  const staff=Object.entries(D.pirByStaff26)
-    .map(([name,d])=>({name, pir:(d[mkey]!=null?d[mkey]:(month==='YTD'?d.ytd:null))}))
-    .filter(s=>s.pir!=null)
-    .sort((a,b)=>b.pir-a.pir);
+  // Build staff list from the full roster for that year so everyone appears,
+  // including those with 0% (no errors). Missing PIR defaults to 0.
+  const roster=(pssD(yr)||[]).map(p=>p.name).filter(Boolean);
+  const names=roster.length?roster:Object.keys(pirMap);
+  const staff=names.map(name=>{
+    const d=pirMap[name]||{};
+    let pir=d[mkey];
+    if(pir==null && month==='YTD') pir=d.ytd;
+    if(pir==null) pir=0; // staff with no incidents = 0%
+    // SAFETY: real PIR is 0-3%. Divide by 100 repeatedly if inflated (e.g. 8.6 → 0.086).
+    while(pir>3.5){ pir=Math.round(pir/100*1000)/1000; }
+    return {name, pir};
+  }).sort((a,b)=>b.pir-a.pir);
 
   const noteEl=document.getElementById('pirStaff-note');
-  if(noteEl) noteEl.textContent=(month==='YTD'?'2026 YTD':month+' 2026')+' · lower is better';
+  if(noteEl) noteEl.textContent=(month==='YTD'?yr+' YTD':month+' '+yr)+' · lower is better';
 
-  const teamAvg=(function(){const v=D.pirRate['2026'].filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0;})();
+  const teamAvg=(function(){const arr=(D.pirRate[String(yr)]||[]).filter(x=>x!=null);return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;})();
+
+  // Size the wrapper to fit all staff snugly (≈28px per bar + space for axis/legend)
+  const wrapEl=document.getElementById('pirStaffWrap');
+  if(wrapEl){
+    const h=staff.length*28+56;
+    wrapEl.style.height=h+'px';
+  }
 
   mkChart('pirStaffChart',{type:'bar',data:{
     labels:staff.map(s=>s.name.split(' ').pop()),
     datasets:[{
       label:'PIR Rate %',data:staff.map(s=>s.pir),
       backgroundColor:staff.map(s=>s.pir===0?'rgba(74,222,128,.55)':(s.pir<0.5?'rgba(56,189,248,.7)':(s.pir<1?'rgba(251,191,36,.75)':'rgba(248,113,113,.8)'))),
-      borderRadius:3
+      borderRadius:4,barPercentage:0.8,categoryPercentage:0.9
     },{
       label:'Team Avg '+teamAvg.toFixed(2)+'%',data:staff.map(()=>teamAvg),
       type:'line',borderColor:c.gold,borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false
     }]
-  },options:{indexAxis:'y',responsive:true,
-    plugins:{legend:{labels:{font:{size:9},boxWidth:8,padding:8}},
+  },options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{font:{size:12},boxWidth:11,padding:8}},
       tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.x.toFixed(3)+'%'}}},
-    scales:{x:{grid:{color:c.grid},ticks:{callback:v=>v.toFixed(1)+'%'}},y:{grid:{display:false}}}}});
+    scales:{x:{grid:{color:c.grid},ticks:{font:{size:12},callback:v=>v.toFixed(1)+'%'}},
+      y:{grid:{display:false},ticks:{font:{size:13,weight:'700'},autoSkip:false}}}}});
 }
 
 function buildPSI(){
@@ -2512,6 +2552,7 @@ function extractFromWorkbook(wb, filename){
   let pir25=Array(12).fill(null);
   let pir26=Array(12).fill(null);
   let pirByStaff26={};
+  let pirByStaff25={};
   let slMetPct={};
 
   // Try EXPORT sheet first (v14+ has PSI/PIR/SL columns in EXPORT)
@@ -2595,36 +2636,44 @@ function extractFromWorkbook(wb, filename){
     }
   });
 
-  // ── Per-staff PIR 2026 (from PSS_EXPORT PIR_RATE column) ──
-  if(typeof pss26!=='undefined' && Array.isArray(pss26)){
-    // pss26 is the array of staff objects; but we need raw monthly PIR
-    // Read directly from PSS_EXPORT sheet
+  // ── Per-staff PIR for BOTH 2025 and 2026 (from PSS_EXPORT PIR_RATE column) ──
+  {
     const pssShRaw=getSheet('📤 PSS_EXPORT');
     if(pssShRaw){
       const phi=findHeader(pssShRaw,'YEAR');
       if(phi>=0){
         const prows=toRows(pssShRaw,phi);
-        prows.forEach(r=>{
-          if(parseInt(r.YEAR)!==2026) return;
-          const name=String(r.STAFF_NAME||'').trim();
-          if(!name) return;
-          // Apply reassignment rules
-          const REAS={'Claire Bradecina':'Mary Aileen Solis','Jadeluisa Valledor':'Mary Aileen Solis','Beverly Condes':'Moira Basilio','Dianne Seril Puebla':'Moira Basilio','Julie Ann Mancil':'Moira Basilio'};
-          const finalName=REAS[name]||name;
-          if(['Claire Bradecina','Jadeluisa Valledor'].includes(name)) return;
-          const mn=MMAP[String(r.MONTH||'').trim()]||String(r.MONTH||'').trim();
-          const pv=parseFloat(r.PIR_RATE);
-          if(isNaN(pv)) return;
-          // PSS_EXPORT PIR_RATE is always a decimal fraction (0.0258 = 2.58%) → always ×100
-          const pct=Math.round(pv*100*10000)/10000;
-          if(!pirByStaff26[finalName]) pirByStaff26[finalName]={};
-          pirByStaff26[finalName][mn]=pct;
-        });
-        // Compute YTD avg per staff (avg of non-null months)
-        Object.keys(pirByStaff26).forEach(name=>{
-          const vals=Object.entries(pirByStaff26[name]).filter(([k])=>k!=='ytd').map(([,v])=>v);
-          pirByStaff26[name].ytd=vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*1000)/1000:0;
-        });
+        const hasPIR=prows.some(r=>r.PIR_RATE!==undefined && r.PIR_RATE!==null && String(r.PIR_RATE).trim()!=='');
+        if(hasPIR){
+          const REAS2={'Claire Bradecina':'Mary Aileen Solis','Jadeluisa Valledor':'Mary Aileen Solis','Beverly Condes':'Moira Basilio','Dianne Seril Puebla':'Moira Basilio','Julie Ann Mancil':'Moira Basilio'};
+          // Shared builder for a given year + target object
+          function buildPirStaff(yr, target){
+            const yrExcl=EXCL_BY_YEAR[yr]||[];
+            prows.forEach(r=>{
+              if(parseInt(r.YEAR)!==yr) return;
+              const name=String(r.STAFF_NAME||'').trim();
+              if(!name) return;
+              if(['Claire Bradecina','Jadeluisa Valledor'].includes(name)) return;
+              const finalName=REAS2[name]||name;
+              if(yrExcl.includes(name)||yrExcl.includes(finalName)) return;
+              const mn=MMAP[String(r.MONTH||'').trim()]||String(r.MONTH||'').trim();
+              const pv=parseFloat(r.PIR_RATE);
+              if(isNaN(pv)) return;
+              // PIR_RATE is ALWAYS a decimal fraction (max ~0.0258) → always ×100
+              const pct=Math.round(pv*100*1000)/1000;
+              if(!target[finalName]) target[finalName]={};
+              // If reassignment merges two people in same month, keep the higher (rare)
+              target[finalName][mn]=(target[finalName][mn]!=null)?Math.max(target[finalName][mn],pct):pct;
+            });
+            Object.keys(target).forEach(name=>{
+              const vals=Object.entries(target[name]).filter(([k])=>k!=='ytd').map(([,v])=>v);
+              target[name].ytd=vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*1000)/1000:0;
+            });
+          }
+          buildPirStaff(2026, pirByStaff26);
+          buildPirStaff(2025, pirByStaff25);
+        }
+        // If no PIR_RATE column, both stay empty → newDB keeps built-in values
       }
     }
   }
@@ -2716,7 +2765,8 @@ function extractFromWorkbook(wb, filename){
     MCOLS:DB.MCOLS,months26,
     arrLabels:DB.arrLabels,
     pirRate:{'2025':pir25,'2026':pir26.some(v=>v!=null)?pir26:DB.pirRate['2026']},
-    pirByStaff26:Object.keys(pirByStaff26).length?pirByStaff26:DB.pirByStaff26
+    pirByStaff26:Object.keys(pirByStaff26).length?pirByStaff26:DB.pirByStaff26,
+    pirByStaff25:Object.keys(pirByStaff25).length?pirByStaff25:DB.pirByStaff25
   };
 
   return {db:newDB, warnings, errors, summary, filename};
@@ -2831,7 +2881,7 @@ function applyUploadedDB(){
     // ── PERSIST to localStorage so data survives browser close/reopen ──
     try{
       localStorage.setItem('cregDashboardDB', JSON.stringify(DB));
-      localStorage.setItem('cregDashboardVer', 'v3');
+      localStorage.setItem('cregDashboardVer', 'v6');
       localStorage.setItem('cregDashboardSaved', new Date().toISOString());
     }catch(e){ console.warn('localStorage save failed:', e); }
     // Update header subtitle
