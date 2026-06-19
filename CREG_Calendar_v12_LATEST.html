@@ -2239,7 +2239,16 @@ function renderOnCallSection(yr,mv,isApproved){
   if(!wrap)return;
   // Read On Call from published schedule taskSched (not requests)
   const byStaff={};
+  // Register core staff
   SCHED_STAFF.forEach(s=>{byStaff[s.key]={nick:s.nick,count:0,dates:[]};});
+  // Register dynamic new hires from full roster (e.g. Ednalyn) so their on-call counts
+  const _ocRoster=(window.allStaffForGen&&window.allStaffForGen.length)?window.allStaffForGen:(staffList||[]);
+  _ocRoster.forEach(sl=>{
+    const k=sl.name.toUpperCase().replace(/[\s,]+/g,'_');
+    if(!byStaff[k]&&!SCHED_STAFF.some(s=>s.nick.toLowerCase()===sl.name.toLowerCase()||s.full.toLowerCase()===sl.name.toLowerCase())){
+      byStaff[k]={nick:sl.name,count:0,dates:[]};
+    }
+  });
   // Scan all published schedules for ONCALL tasks
   // Use a seen set to prevent double-counting the same date+staff across two months' pubScheds (bridge days)
   const seenOncall=new Set();
@@ -2380,6 +2389,19 @@ SCHED_STAFF.forEach(s=>{SCHED_NICK[s.nick.toLowerCase()]=s.key;});
 const _OLD_NICKS={'alleli':'ANZURES','moi':'BASILIO','ledge':'CALICA','ian':'PAHILA',
   'gladz':'PASAY','mary':'SOLIS','jat':'TAGUIAM','hans':'VILLAREAL','nadz':'CARINGAL'};
 Object.assign(SCHED_NICK,_OLD_NICKS);
+
+// Resolve a staff key (core or dynamic new hire) to a friendly display name.
+// Falls back through: SCHED_STAFF → live roster → prettified key.
+function nickForKey(key){
+  if(!key)return key;
+  const core=SCHED_STAFF.find(s=>s.key===key);
+  if(core)return core.nick;
+  const roster=(window.allStaffForGen&&window.allStaffForGen.length)?window.allStaffForGen:(typeof staffList!=='undefined'?staffList:[]);
+  const dyn=(roster||[]).find(sl=>sl.name.toUpperCase().replace(/[\s,]+/g,'_')===key);
+  if(dyn)return dyn.name;
+  // Last resort: turn "VILLALUZ_EDNALYN" into "Villaluz Ednalyn"
+  return key.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+}
 
 // Radiology rotation
 const RAD_ROT=[
@@ -3569,9 +3591,9 @@ function renderGenFull(){
   if(logs.length>0||offDenied.length>0){genPreview._statGranted=granted.length;genPreview._statDenied=allDenied.length;}
   document.getElementById('gen-preview-title').textContent=`${MONTHS_S[(genPreview.month||genSelMonth)-1]} ${genPreview.year||curY} — Preview (click any cell to override)`;
   let alerts='';
-  const allDeniedToShow=[...allDenied];if(allDeniedToShow.length)alerts+=`<div class="alert-box warn"><strong>⚠ ${allDenied.length} request(s) denied</strong><br>${allDeniedToShow.map(l=>{const s=SCHED_STAFF.find(x=>x.key===l.staffKey);const d=new Date(l.date+'T00:00:00');return `${DOW_S[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})} — ${s?.nick||l.staffKey}: ${l.reason}`;}).join('<br>')}</div>`;
+  const allDeniedToShow=[...allDenied];if(allDeniedToShow.length)alerts+=`<div class="alert-box warn"><strong>⚠ ${allDenied.length} request(s) denied</strong><br>${allDeniedToShow.map(l=>{const s={nick:nickForKey(l.staffKey)};const d=new Date(l.date+'T00:00:00');return `${DOW_S[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})} — ${s?.nick||l.staffKey}: ${l.reason}`;}).join('<br>')}</div>`;
   if(oncall.length)alerts+=`<div class="alert-box err">📞 On-Call triggered: ${oncall.length} day(s)</div>`;
-  if(conPerson&&conDay){const s=SCHED_STAFF.find(x=>x.key===conPerson);const d=new Date(conDay+'T00:00:00');alerts+=`<div class="alert-box info">📄 Consent: <strong>${s?.nick}</strong> on ${DOW_S[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</div>`;}
+  if(conPerson&&conDay){const s={nick:nickForKey(conPerson)};const d=new Date(conDay+'T00:00:00');alerts+=`<div class="alert-box info">📄 Consent: <strong>${s?.nick}</strong> on ${DOW_S[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</div>`;}
   document.getElementById('gen-alerts').innerHTML=alerts;
   const _mo=genPreview.month||genSelMonth,_yr=genPreview.year||curY;
   const _monthDays=monthDays||(days||[]).filter(d=>d.getUTCFullYear()===_yr&&d.getUTCMonth()+1===_mo);
@@ -4075,7 +4097,7 @@ function renderLegend(mode){
 }
 function renderLogHTML(logs){
   if(!logs.length)return '<div class="sched-empty"><div class="sched-empty-title">No decisions logged</div></div>';
-  return '<div style="max-height:420px;overflow-y:auto">'+logs.map(l=>{const s=SCHED_STAFF.find(x=>x.key===l.staffKey);const d=new Date(l.date+'T00:00:00');const sc=l.status==='granted'?'#059669':l.status==='denied'?'#DC2626':'#2563EB';const sb=l.status==='granted'?'#D1FAE5':l.status==='denied'?'#FEE2E2':'#DBEAFE';return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)"><span style="min-width:90px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace">${DOW_S[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</span><div style="flex:1"><div style="font-size:12px;font-weight:600">${s?.nick||l.staffKey} <span style="font-weight:400;color:var(--text2)">· ${l.type}</span></div><div style="font-size:11px;color:var(--text2)">${l.reason}</div></div><span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${sb};color:${sc}">${l.status==='granted'?'✅':l.status==='denied'?'❌':'📞'}</span></div>`;}).join('')+'</div>';
+  return '<div style="max-height:420px;overflow-y:auto">'+logs.map(l=>{const s={nick:nickForKey(l.staffKey)};const d=new Date(l.date+'T00:00:00');const sc=l.status==='granted'?'#059669':l.status==='denied'?'#DC2626':'#2563EB';const sb=l.status==='granted'?'#D1FAE5':l.status==='denied'?'#FEE2E2':'#DBEAFE';return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)"><span style="min-width:90px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace">${DOW_S[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</span><div style="flex:1"><div style="font-size:12px;font-weight:600">${s?.nick||l.staffKey} <span style="font-weight:400;color:var(--text2)">· ${l.type}</span></div><div style="font-size:11px;color:var(--text2)">${l.reason}</div></div><span style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${sb};color:${sc}">${l.status==='granted'?'✅':l.status==='denied'?'❌':'📞'}</span></div>`;}).join('')+'</div>';
 }
 
 // Override modal
@@ -4097,8 +4119,8 @@ const OVERRIDE_COMBOS=[
   {label:'8AM-5PM · Counter',shift:'8AM-5PM', task:'COUNTER'},
 ];
 function openOverride(dk,key,cur){
-  ovrPending={dk,key};const s=SCHED_STAFF.find(x=>x.key===key);const d=new Date(dk+'T00:00:00');
-  document.getElementById('ov-title').textContent=`Override: ${s?.nick} — ${DOW_S[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}`;
+  ovrPending={dk,key};const sNick=nickForKey(key);const d=new Date(dk+'T00:00:00');
+  document.getElementById('ov-title').textContent=`Override: ${sNick} — ${DOW_S[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}`;
   document.getElementById('ov-current').textContent=`Current: ${cur}`;
   const opts=document.getElementById('ov-options');
   // Break override section (shown when in breaks tab)
@@ -4134,7 +4156,7 @@ function applyOverride(val,task){
   // Recalculate breaks for this day after shift change
   recalcBreaksForDay(dk);
   closeOverride();renderGenTable();
-  showToast(`${SCHED_STAFF.find(x=>x.key===key)?.nick} → ${val}${task?' ('+task+')':''} ✓`,'ok');
+  showToast(`${nickForKey(key)} → ${val}${task?' ('+task+')':''} ✓`,'ok');
 }
 
 function recalcBreaksForDay(dk){
@@ -4154,7 +4176,7 @@ function applyBreakOverride(slot){
   if(!window.genBrkOverrides[dk])window.genBrkOverrides[dk]={};
   window.genBrkOverrides[dk][key]=slot;
   closeOverride();renderGenTable();
-  showToast(`${SCHED_STAFF.find(x=>x.key===key)?.nick} break → ${slot} ✓`,'ok');
+  showToast(`${nickForKey(key)} break → ${slot} ✓`,'ok');
 }
 
 function applyCustomOverride(){
@@ -4168,7 +4190,7 @@ function applyCustomOverride(){
   genTaskOverrides[dk][key]='TRAINING';
   if(inp)inp.value='';
   closeOverride();renderGenTable();
-  showToast(`${SCHED_STAFF.find(x=>x.key===ovrPending.key)?.nick} → ${val} ✓`,'ok');
+  showToast(`${nickForKey(ovrPending.key)} → ${val} ✓`,'ok');
 }
 function resetOverride(){const{dk,key}=ovrPending;if(genOverrides[dk])delete genOverrides[dk][key];closeOverride();renderGenTable();}
 function closeOverride(){
