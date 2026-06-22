@@ -1766,11 +1766,40 @@ function buildExec(){
   document.getElementById('exec-lbl').textContent=`${dm==='YTD'?`${yr} YTD`:`${dm} ${yr}`} — Executive Summary`;
   let bp='',bt='';
   if(yr===2026&&year!==0){
-    const months26count=D.monthly26.filter(x=>x.patients).length;
-    const limit=dm==='YTD'?months26count:null;
-    const d5=getSum(2025,dm,limit);
-    const t5=d5.rb+d5.sched+d5.inquiry+d5.results;
-    bp=yoyBadge(d5.patients,d.patients);bt=yoyBadge(t5,tot);
+    if(dm==='YTD'){
+      // Day-matched YTD: latest partial month compared on equal calendar days (same as Ops)
+      const dm26=getDayMatchedYoY();
+      if(dm26){
+        const s25=dm26.sum25, s26=dm26.sum26;
+        const tot26=s26.rb+s26.sched+s26.inquiry+s26.results;
+        const tot25=s25.rb+s25.sched+s25.inquiry+s25.results;
+        bp=yoyBadge(s25.patients,s26.patients);bt=yoyBadge(tot25,tot26);
+      } else {
+        const months26count=D.monthly26.filter(x=>x.patients).length;
+        const d5=getSum(2025,dm,months26count);
+        const t5=d5.rb+d5.sched+d5.inquiry+d5.results;
+        bp=yoyBadge(d5.patients,d.patients);bt=yoyBadge(t5,tot);
+      }
+    } else {
+      // Specific month: day-match if it's the latest (partial) month, else full-month
+      const isLatest=dm===D.months26[D.months26.length-1];
+      if(isLatest){
+        const d26days=((D.daily26&&D.daily26[dm])||[]).filter(x=>x[1]>0);
+        const d25days=(D.daily25&&D.daily25[dm])||[];
+        const nDays=d26days.length;
+        const cen26=d26days.reduce((a,x)=>a+(x[1]||0),0);
+        const cen25=d25days.slice(0,nDays).reduce((a,x)=>a+(x[1]||0),0);
+        const m25row=monthly(2025).find(r=>r.m===dm)||{};
+        const days25=d25days.filter(x=>x[1]>0).length||nDays;
+        const frac=days25>0?Math.min(nDays/days25,1):1;
+        const tot25=Math.round(((m25row.rb||0)+(m25row.sched||0)+(m25row.inquiry||0)+(m25row.results||0))*frac);
+        bp=yoyBadge(cen25,d.patients);bt=yoyBadge(tot25,tot);
+      } else {
+        // Full-month comparison (both years complete)
+        const d5=getSum(2025,dm),t5=d5.rb+d5.sched+d5.inquiry+d5.results;
+        bp=yoyBadge(d5.patients,d.patients);bt=yoyBadge(t5,tot);
+      }
+    }
   }
   document.getElementById('ekGrid').innerHTML=`
     <div class="ekc"><div class="ekv" style="color:var(--sky)">${fmt(d.patients)}${bp}</div><div class="ekl">Unique Patients</div></div>
