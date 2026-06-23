@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CREG Training Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ===== CSS VARIABLES ===== */
+:root {
+  --primary: #185FA5;
+  --primary-light: #E6F1FB;
+  --secondary: #534AB7;
+  --secondary-light: #EEEDFE;
+  --success: #1D9E75;
+  --success-light: #E1F5EE;
+  --danger: #D85A30;
+  --danger-light: #FAECE7;
+  --warning: #EF9F27;
+  --warning-light: #FAEEDA;
+  --neutral: #888780;
+  --neutral-light: #F1EFE8;
+  --white: #ffffff;
+  --bg: #F7F8FA;
+  --border: #E4E2DC;
+  --text-dark: #1A1A2E;
+  --text-mid: #4A4A5A;
+  --text-light: #888780;
+  --sidebar-w: 240px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text-dark);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ===== LAYOUT ===== */
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  transition: transform 0.3s;
+}
+
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-logo .logo-mark {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.logo-icon {
+  width: 34px; height: 34px;
+  background: var(--primary);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 16px;
+}
+
+.logo-text { font-size: 15px; font-weight: 600; color: var(--text-dark); }
+.logo-sub { font-size: 11px; color: var(--text-light); margin-top: 1px; }
+
+.nav { padding: 12px 10px; flex: 1; overflow-y: auto; }
+
+.nav-section-label {
+  font-size: 10px; font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 12px 8px 6px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text-mid);
+  font-size: 13.5px;
+  font-weight: 400;
+  transition: all 0.15s;
+  margin-bottom: 2px;
+  user-select: none;
+}
+
+.nav-item:hover { background: var(--bg); color: var(--text-dark); }
+.nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+.nav-item i { font-size: 17px; width: 20px; text-align: center; }
+
+.sidebar-footer {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-light);
+}
+
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-title { font-size: 16px; font-weight: 600; }
+.topbar-sub { font-size: 12px; color: var(--text-light); }
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.page-content { padding: 28px; flex: 1; }
+
+/* ===== COMPONENTS ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+.btn-primary:hover { background: #1450a0; }
+.btn-secondary { background: var(--white); color: var(--text-dark); border-color: var(--border); }
+.btn-secondary:hover { background: var(--bg); }
+.btn-danger { background: var(--danger-light); color: var(--danger); border-color: #f0b9a6; }
+.btn-danger:hover { background: #f5cfc4; }
+.btn-success { background: var(--success-light); color: var(--success); border-color: #a8dfc9; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-icon { padding: 7px; border-radius: var(--radius-md); background: none; border: 1px solid var(--border); cursor: pointer; color: var(--text-mid); transition: all 0.15s; font-size: 16px; display:inline-flex;align-items:center; }
+.btn-icon:hover { background: var(--bg); color: var(--text-dark); }
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.card-title { font-size: 14px; font-weight: 600; }
+.card-body { padding: 20px; }
+
+/* KPI Cards */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+
+.kpi-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--kpi-color, var(--primary));
+}
+
+.kpi-icon {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--kpi-bg, var(--primary-light));
+  color: var(--kpi-color, var(--primary));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.kpi-value { font-size: 26px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+.kpi-label { font-size: 12px; color: var(--text-light); font-weight: 400; }
+
+/* Status Badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-valid { background: var(--success-light); color: var(--success); }
+.badge-completed { background: var(--success-light); color: var(--success); }
+.badge-expiring { background: var(--warning-light); color: #b87a10; }
+.badge-due90 { background: #FFF8EC; color: #b87a10; border: 1px solid #f5d79a; }
+.badge-overdue { background: var(--danger-light); color: var(--danger); }
+.badge-pending { background: var(--neutral-light); color: var(--neutral); }
+.badge-inactive { background: #F0EEF8; color: var(--secondary); }
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #FAFAF9; }
+
+/* Forms */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1000;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.modal-title { font-size: 15px; font-weight: 600; }
+.modal-close { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 20px; display:flex;align-items:center; }
+.modal-close:hover { color: var(--text-dark); }
+.modal-body { padding: 20px 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 12.5px; font-weight: 500; margin-bottom: 6px; color: var(--text-mid); }
+.form-control {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font);
+  font-size: 13.5px;
+  color: var(--text-dark);
+  background: var(--white);
+  transition: border-color 0.15s;
+  outline: none;
+}
+.form-control:focus { border-color: var(--primary); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* Filters */
+.filters {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.filter-input {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font);
+  font-size: 13px;
+  background: var(--white);
+  outline: none;
+  min-width: 160px;
+}
+.filter-input:focus { border-color: var(--primary); }
+
+/* Tabs */
+.tabs { display: flex; gap: 2px; margin-bottom: 20px; background: var(--bg); padding: 4px; border-radius: var(--radius-md); width: fit-content; }
+.tab-btn { padding: 7px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 400; cursor: pointer; background: none; border: none; color: var(--text-mid); font-family: var(--font); transition: all 0.15s; }
+.tab-btn.active { background: var(--white); color: var(--text-dark); font-weight: 500; box-shadow: var(--shadow); }
+
+/* Compliance Matrix */
+.matrix-wrap { overflow-x: auto; }
+.matrix-table { border-collapse: separate; border-spacing: 0; min-width: 700px; }
+.matrix-table th { padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.matrix-table th.employee-col { min-width: 180px; text-align: left; }
+.matrix-table th.training-col { text-align: center; max-width: 100px; }
+.matrix-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.matrix-table td.employee-name { font-size: 13px; font-weight: 500; white-space: nowrap; }
+.matrix-cell { display: flex; align-items: center; justify-content: center; }
+.matrix-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+.matrix-label { display: inline-flex; align-items: center; justify-content: center; padding: 3px 7px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; min-width: 48px; text-align: center; }
+
+/* Alert section */
+.alert-row { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 8px; }
+.alert-overdue { background: var(--danger-light); border: 1px solid #f0b9a6; }
+.alert-expiring { background: var(--warning-light); border: 1px solid #f5d79a; }
+.alert-text { font-size: 13px; flex: 1; }
+.alert-text strong { font-weight: 600; }
+
+/* Print Styles */
+@media print {
+  .sidebar, .topbar, .no-print { display: none !important; }
+  .main { margin-left: 0 !important; }
+  .page-content { padding: 0 !important; }
+  body { background: white !important; }
+  .card { box-shadow: none !important; border: 1px solid #ddd !important; page-break-inside: avoid; }
+  .print-header { display: block !important; }
+  table { font-size: 11px !important; }
+  thead th { font-size: 10px !important; }
+}
+
+.print-header {
+  display: none;
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--primary);
+}
+
+/* Page visibility */
+.page { display: none; }
+.page.active { display: block; }
+
+/* Employee cards */
+.emp-card { padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--white); margin-bottom: 16px; }
+.emp-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.emp-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; flex-shrink: 0; }
+.emp-name { font-weight: 600; font-size: 14px; }
+.emp-id { font-size: 12px; color: var(--text-light); font-family: var(--mono); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* Mobile */
+.hamburger { display: none; background: none; border: none; cursor: pointer; font-size: 22px; color: var(--text-dark); }
+@media (max-width: 768px) {
+  .hamburger { display: flex; align-items: center; }
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .form-row { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-content { padding: 16px; }
+  .filters { flex-direction: column; }
+  .filter-input { min-width: 100%; }
+}
+
+/* Toast */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast { background: var(--text-dark); color: white; padding: 12px 18px; border-radius: var(--radius-md); font-size: 13px; box-shadow: var(--shadow-md); animation: slideIn 0.3s ease; max-width: 320px; }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 3px var(--danger-light),0 0 0 5px #f0b9a6; } 50% { box-shadow: 0 0 0 5px var(--danger-light),0 0 0 8px #f0b9a6; } }
+
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
+.empty-state i { font-size: 40px; margin-bottom: 10px; display: block; }
+.empty-state p { font-size: 13px; }
+
+.section-gap { margin-bottom: 24px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.confirm-dialog { max-width: 380px; }
+
+.tag { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 500; background: var(--primary-light); color: var(--primary); margin: 2px; }
+.tag.mandatory { background: var(--danger-light); color: var(--danger); }
+.tag.elective { background: var(--success-light); color: var(--success); }
+
+.search-wrap { position: relative; }
+.search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-light); font-size: 15px; pointer-events: none; }
+.search-wrap input { padding-left: 32px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon"><i class="ti ti-certificate"></i></div>
+      <div>
+        <div class="logo-text">CREG Tracker</div>
+        <div class="logo-sub">Training Management</div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section-label">Main</div>
+    <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+      <i class="ti ti-layout-dashboard"></i> Dashboard
+    </div>
+    <div class="nav-item" data-page="records" onclick="navigate('records')">
+      <i class="ti ti-clipboard-list"></i> Training Records
+    </div>
+    <div class="nav-item" data-page="matrix" onclick="navigate('matrix')">
+      <i class="ti ti-table"></i> Compliance Matrix
+    </div>
+    <div class="nav-section-label">Management</div>
+    <div class="nav-item" data-page="employees" onclick="navigate('employees')">
+      <i class="ti ti-users"></i> Employees
+    </div>
+    <div class="nav-item" data-page="catalog" onclick="navigate('catalog')">
+      <i class="ti ti-books"></i> Training Catalog
+    </div>
+    <div class="nav-section-label">Reports</div>
+    <div class="nav-item" data-page="print" onclick="navigate('print')">
+      <i class="ti ti-printer"></i> Print & Export
+    </div>
+    <div class="nav-section-label">System</div>
+    <div class="nav-item" data-page="settings" onclick="navigate('settings')">
+      <i class="ti ti-settings"></i> Data & Settings
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    Central Registration · MMC<br>
+    <span id="footer-date"></span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger no-print" onclick="toggleSidebar()"><i class="ti ti-menu-2"></i></button>
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub" id="topbar-sub">Overview of team training compliance</div>
+      </div>
+    </div>
+    <div class="topbar-right no-print">
+      <button class="btn btn-primary btn-sm" onclick="openModal('addRecordModal')"><i class="ti ti-plus"></i> Add Record</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="print-header">
+        <h2 style="color:var(--primary);font-size:20px;">CREG Training Compliance Report</h2>
+        <p style="color:var(--text-light);font-size:13px;">Central Registration · Makati Medical Center · <span id="print-date-dash"></span></p>
+      </div>
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <div class="section-gap">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="ti ti-alert-triangle" style="color:var(--warning);margin-right:6px;"></i>Alerts — Action Required</span>
+          </div>
+          <div class="card-body" id="alerts-container">
+            <div class="empty-state"><i class="ti ti-circle-check" style="color:var(--success);"></i><p>No alerts. All active staff are compliant.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2 section-gap">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Compliance by Training</span></div>
+          <div class="card-body" style="padding:16px;">
+            <div style="position:relative;height:240px;"><canvas id="trainingChart"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Status Distribution</span></div>
+          <div class="card-body" style="padding:16px;">
+            <div style="position:relative;height:240px;"><canvas id="statusChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TRAINING RECORDS ===== -->
+    <div class="page" id="page-records">
+      <div class="filters no-print">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" class="filter-input" id="rec-search" placeholder="Search name or training..." oninput="renderRecords()">
+        </div>
+        <select class="filter-input" id="rec-filter-emp" onchange="renderRecords()">
+          <option value="">All Employees</option>
+        </select>
+        <select class="filter-input" id="rec-filter-course" onchange="renderRecords()">
+          <option value="">All Courses</option>
+        </select>
+        <select class="filter-input" id="rec-filter-status" onchange="renderRecords()">
+          <option value="">All Statuses</option>
+          <option value="Valid">Valid</option>
+          <option value="Completed">Completed</option>
+          <option value="Expiring Soon">Expiring Soon</option>
+          <option value="Due in 90 Days">Due in 90 Days</option>
+          <option value="Overdue">Overdue</option>
+          <option value="Pending">Pending</option>
+        </select>
+        <select class="filter-input" id="rec-filter-active" onchange="renderRecords()">
+          <option value="active">Active Staff Only</option>
+          <option value="all">Include Inactive</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Training Course</th>
+                <th>Type</th>
+                <th>Date Completed</th>
+                <th>Next Due</th>
+                <th>Days Left</th>
+                <th>Status</th>
+                <th class="no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="records-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== COMPLIANCE MATRIX ===== -->
+    <div class="page" id="page-matrix">
+      <div class="card section-gap">
+        <div class="card-header">
+          <span class="card-title">Mandatory Training Compliance Matrix</span>
+          <div class="no-print" style="display:flex;gap:8px;align-items:center;font-size:12px;flex-wrap:wrap;">
+            <span style="display:flex;align-items:center;gap:4px;"><span class="matrix-label" style="background:var(--success);color:#fff;">Done</span> Permanent</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span class="matrix-label" style="background:transparent;color:var(--success);border:1.5px solid var(--success);">Valid</span> Recurring OK</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span class="matrix-label" style="background:#FFF8EC;color:#c17a10;border:1.5px solid #f5d79a;">~90d</span> Due in 90 Days</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span class="matrix-label" style="background:#FAEEDA;color:#c17a10;border:1.5px solid #f5d79a;">Soon</span> Expiring Soon</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span class="matrix-label" style="background:var(--danger-light);color:var(--danger);">Overdue</span> Overdue</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span class="matrix-label" style="background:var(--neutral-light);color:var(--neutral);">Pending</span> Pending/No Record</span>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="matrix-wrap">
+            <table class="matrix-table" id="matrix-table"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== EMPLOYEES ===== -->
+    <div class="page" id="page-employees">
+      <div class="filters no-print" style="justify-content:space-between;align-items:center;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input type="text" class="filter-input" id="emp-search" placeholder="Search employees..." oninput="renderEmployees()">
+          </div>
+          <select class="filter-input" id="emp-filter-status" onchange="renderEmployees()">
+            <option value="active">Active Only</option>
+            <option value="all">All (incl. Inactive)</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('addEmpModal')"><i class="ti ti-user-plus"></i> Add Employee</button>
+      </div>
+      <div id="employees-container"></div>
+    </div>
+
+    <!-- ===== TRAINING CATALOG ===== -->
+    <div class="page" id="page-catalog">
+      <div class="filters no-print" style="justify-content:space-between;align-items:center;">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" class="filter-input" id="cat-search" placeholder="Search training..." oninput="renderCatalog()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('addCourseModal')"><i class="ti ti-plus"></i> Add Training</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Training Course</th>
+                <th>Type</th>
+                <th>Recurring</th>
+                <th>Renewal Period</th>
+                <th>Active Records</th>
+                <th class="no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="catalog-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PRINT & EXPORT ===== -->
+    <div class="page" id="page-print">
+      <div class="grid-2 section-gap">
+        <div class="card">
+          <div class="card-header"><span class="card-title"><i class="ti ti-report" style="margin-right:6px;color:var(--primary);"></i>Full Team Compliance Report</span></div>
+          <div class="card-body">
+            <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">Print a complete compliance report for all active staff — suitable for submission to HR or Ms. Gacias.</p>
+            <button class="btn btn-primary" onclick="printTeamReport()"><i class="ti ti-printer"></i> Print Team Report</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><i class="ti ti-user" style="margin-right:6px;color:var(--secondary);"></i>Individual Employee Record</span></div>
+          <div class="card-body">
+            <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">Print a training record for a specific employee.</p>
+            <div class="form-group">
+              <select class="form-control" id="print-emp-select"></select>
+            </div>
+            <button class="btn btn-secondary" onclick="printEmpRecord()"><i class="ti ti-printer"></i> Print Employee Record</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title"><i class="ti ti-alert-triangle" style="margin-right:6px;color:var(--warning);"></i>Alerts Report</span></div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">Print a focused report of all overdue and expiring-soon items for escalation or follow-up.</p>
+          <button class="btn btn-danger" onclick="printAlertsReport()"><i class="ti ti-printer"></i> Print Alerts Report</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div class="page" id="page-settings">
+      <div class="grid-2 section-gap">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Export Data</span></div>
+          <div class="card-body">
+            <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">Download a full backup of all tracker data as a JSON file.</p>
+            <button class="btn btn-secondary" onclick="exportData()"><i class="ti ti-download"></i> Export JSON Backup</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Import Data</span></div>
+          <div class="card-body">
+            <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">Restore data from a previously exported JSON backup.</p>
+            <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)">
+            <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()"><i class="ti ti-upload"></i> Import JSON Backup</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title" style="color:var(--danger);">Danger Zone</span></div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">Reset all data to the factory default. This cannot be undone.</p>
+          <button class="btn btn-danger" onclick="confirmReset()"><i class="ti ti-trash"></i> Reset to Default Data</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end page-content -->
+</main>
+</div><!-- end app -->
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Add/Edit Record -->
+<div class="modal-overlay" id="addRecordModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="addRecordTitle">Add Training Record</span>
+      <button class="modal-close" onclick="closeModal('addRecordModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rec-edit-id">
+      <div class="form-group">
+        <label class="form-label">Employee *</label>
+        <select class="form-control" id="rec-emp-id"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Training Course *</label>
+        <select class="form-control" id="rec-course-id" onchange="onCourseSelect()"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date Completed</label>
+          <input type="date" class="form-control" id="rec-date-completed">
+        </div>
+        <div class="form-group" id="rec-next-due-group">
+          <label class="form-label">Next Due Date <span id="rec-next-due-label" style="color:var(--text-light);font-weight:400;">(auto)</span></label>
+          <input type="date" class="form-control" id="rec-next-due" placeholder="Auto-calculated">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Comments</label>
+        <textarea class="form-control" id="rec-comments" rows="2" style="resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addRecordModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRecord()">Save Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Employee -->
+<div class="modal-overlay" id="addEmpModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="addEmpTitle">Add Employee</span>
+      <button class="modal-close" onclick="closeModal('addEmpModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="emp-edit-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Employee ID *</label>
+          <input type="text" class="form-control" id="emp-id-input" placeholder="e.g. 012345">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date Hired</label>
+          <input type="date" class="form-control" id="emp-date-hired">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full Name * <small style="color:var(--text-light);">(Last, First Middle)</small></label>
+        <input type="text" class="form-control" id="emp-name" placeholder="e.g. dela Cruz, Maria Santos">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Department</label>
+        <input type="text" class="form-control" id="emp-dept" value="Business Operations Support Services">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-control" id="emp-status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="form-group" id="emp-inactive-reason-wrap" style="display:none;">
+        <label class="form-label">Reason for Inactivation</label>
+        <select class="form-control" id="emp-inactive-reason">
+          <option value="Transferred">Transferred</option>
+          <option value="Resigned">Resigned</option>
+          <option value="Retired">Retired</option>
+          <option value="On Leave">On Extended Leave</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addEmpModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEmployee()">Save Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Course -->
+<div class="modal-overlay" id="addCourseModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="addCourseTitle">Add Training Course</span>
+      <button class="modal-close" onclick="closeModal('addCourseModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="course-edit-id">
+      <div class="form-group">
+        <label class="form-label">Training Course Name *</label>
+        <input type="text" class="form-control" id="course-name" placeholder="e.g. Fire Safety Training">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type *</label>
+          <select class="form-control" id="course-type">
+            <option value="Mandatory">Mandatory</option>
+            <option value="Elective">Elective</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Recurring?</label>
+          <select class="form-control" id="course-recurring" onchange="toggleRenewal()">
+            <option value="no">No (Permanent once done)</option>
+            <option value="yes">Yes (Renewal required)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" id="renewal-period-wrap" style="display:none;">
+        <label class="form-label">Renewal Period (months)</label>
+        <input type="number" class="form-control" id="course-renewal" placeholder="e.g. 12 for yearly, 24 for every 2 years" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-control" id="course-active">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive (archived)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addCourseModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCourse()">Save Course</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-dialog">
+    <div class="modal-header">
+      <span class="modal-title" id="confirm-title">Confirm Action</span>
+      <button class="modal-close" onclick="closeModal('confirmModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-message" style="font-size:13.5px;color:var(--text-mid);"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirm-btn" onclick="">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA STORE =====
+const DEFAULT_DATA = {
+  employees: [
+    { id: 'e1', empId: '005414', name: 'Anzures, Alleli Rivera', dept: 'Business Operations Support Services', status: 'inactive', inactiveReason: 'Transferred', dateHired: '' },
+    { id: 'e2', empId: '004581', name: 'Basilio, Moira Cabatic', dept: 'Business Operations Support Services', status: 'active', inactiveReason: '', dateHired: '' },
+    { id: 'e3', empId: '000984', name: 'Calica, Legenn Nezer Resus', dept: 'Business Operations Support Services', status: 'active', inactiveReason: '', dateHired: '' },
+    { id: 'e4', empId: '002456', name: 'Caringal, Nadine Andal', dept: 'Business Operations Support Services', status: 'active', inactiveReason: '', dateHired: '' },
+    { id: 'e5', empId: '005417', name: 'Pahila, Ian Timothy Celso', dept: 'Business Operations Support Services', status: 'active', inactiveReason: '', dateHired: '' },
+    { id: 'e6', empId: '002290', name: 'Pasay, Gladize Grace Laureta', dept: 'Business Operations Support Services', status: 'active', inactiveReason: '', dateHired: '' },
+    { id: 'e7', empId: '001937', name: 'Bansagan, Mary Aileen Solis', dept: 'Business Operations Support Services', status: 'active', inactiveReason: '', dateHired: '' },
+    { id: 'e8', empId: '011162', name: 'Villareal, Hans Christian Salegumba', dept: 'Business Operations Support Services', status: 'active', inactiveReason: '', dateHired: '' },
+    { id: 'e9', empId: '007077', name: 'Villaluz, Ednalyn Espinosa', dept: 'Business Operations Support Services', status: 'active', inactiveReason: '', dateHired: '' }
+  ],
+  courses: [
+    { id: 'c1', name: 'MMC ONE', type: 'Mandatory', recurring: 'no', renewalMonths: null, active: 'active' },
+    { id: 'c2', name: 'Departmental Orientation Checklist', type: 'Mandatory', recurring: 'no', renewalMonths: null, active: 'active' },
+    { id: 'c3', name: 'Basic Life Support (BLS)', type: 'Mandatory', recurring: 'yes', renewalMonths: 24, active: 'active' },
+    { id: 'c4', name: 'MMC Safety Program / MBFHI & Breastfeeding', type: 'Mandatory', recurring: 'yes', renewalMonths: 12, active: 'active' },
+    { id: 'c5', name: 'BCP / Emergency Table Top Drill', type: 'Mandatory', recurring: 'yes', renewalMonths: 12, active: 'active' },
+    { id: 'c13', name: 'Emergency Fire Drill', type: 'Mandatory', recurring: 'yes', renewalMonths: 12, active: 'active' },
+    { id: 'c14', name: 'Emergency Earthquake Drill', type: 'Mandatory', recurring: 'yes', renewalMonths: 12, active: 'active' },
+    { id: 'c6', name: 'IHI Open Course', type: 'Elective', recurring: 'no', renewalMonths: null, active: 'active' },
+    { id: 'c7', name: 'Basic Excel Training', type: 'Elective', recurring: 'no', renewalMonths: null, active: 'active' },
+    { id: 'c8', name: 'Advanced MS Excel', type: 'Elective', recurring: 'no', renewalMonths: null, active: 'active' },
+    { id: 'c9', name: 'Empathy Academy / Connecting with Customers', type: 'Elective', recurring: 'no', renewalMonths: null, active: 'active' },
+    { id: 'c10', name: 'Essentials of Communication', type: 'Elective', recurring: 'no', renewalMonths: null, active: 'active' },
+    { id: 'c11', name: 'Problem Solving and Decision Making', type: 'Elective', recurring: 'no', renewalMonths: null, active: 'active' },
+    { id: 'c12', name: 'Stress Management, Happiness and Health', type: 'Elective', recurring: 'no', renewalMonths: null, active: 'active' }
+  ],
+  records: [
+    // Anzures (e1 - inactive) — MMC ONE & Orientation marked Completed
+    { id: 'r1', empId: 'e1', courseId: 'c1', dateCompleted: '2014-01-01', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r2', empId: 'e1', courseId: 'c2', dateCompleted: '2014-01-01', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r3', empId: 'e1', courseId: 'c3', dateCompleted: '2024-07-26', nextDue: '2026-07-26', comments: '' },
+    { id: 'r4', empId: 'e1', courseId: 'c4', dateCompleted: '2025-12-10', nextDue: '2026-12-10', comments: '' },
+    { id: 'r5', empId: 'e1', courseId: 'c11', dateCompleted: '2025-08-12', nextDue: '', comments: '' },
+    // Basilio (e2) — MMC ONE & Orientation marked Completed
+    { id: 'r6', empId: 'e2', courseId: 'c1', dateCompleted: '2018-07-01', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r7', empId: 'e2', courseId: 'c2', dateCompleted: '2018-07-01', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r8', empId: 'e2', courseId: 'c3', dateCompleted: '2024-09-23', nextDue: '2026-09-23', comments: '' },
+    { id: 'r9', empId: 'e2', courseId: 'c4', dateCompleted: '2025-12-18', nextDue: '2026-12-18', comments: '' },
+    { id: 'r10', empId: 'e2', courseId: 'c10', dateCompleted: '2025-08-18', nextDue: '', comments: '' },
+    // Calica (e3) — MMC ONE & Orientation marked Completed
+    { id: 'r11', empId: 'e3', courseId: 'c1', dateCompleted: '2013-07-01', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r12', empId: 'e3', courseId: 'c2', dateCompleted: '2013-07-01', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r13', empId: 'e3', courseId: 'c3', dateCompleted: '2024-09-12', nextDue: '2026-09-12', comments: '' },
+    { id: 'r14', empId: 'e3', courseId: 'c4', dateCompleted: '2025-12-05', nextDue: '2026-12-05', comments: '' },
+    { id: 'r15', empId: 'e3', courseId: 'c9', dateCompleted: '2025-07-29', nextDue: '', comments: '' },
+    // Caringal (e4) — MMC ONE & Orientation marked Completed
+    { id: 'r16', empId: 'e4', courseId: 'c1', dateCompleted: '2015-11-06', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r17', empId: 'e4', courseId: 'c2', dateCompleted: '2015-11-06', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r18', empId: 'e4', courseId: 'c3', dateCompleted: '2024-09-23', nextDue: '2026-09-23', comments: '' },
+    { id: 'r19', empId: 'e4', courseId: 'c4', dateCompleted: '2025-12-04', nextDue: '2026-12-04', comments: '' },
+    { id: 'r20', empId: 'e4', courseId: 'c6', dateCompleted: '2023-03-31', nextDue: '', comments: '' },
+    { id: 'r21', empId: 'e4', courseId: 'c7', dateCompleted: '2025-07-09', nextDue: '', comments: '' },
+    { id: 'r22', empId: 'e4', courseId: 'c8', dateCompleted: '2025-08-20', nextDue: '', comments: '' },
+    // Pahila (e5) — MMC ONE & Orientation marked Completed
+    { id: 'r23', empId: 'e5', courseId: 'c1', dateCompleted: '2019-01-01', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r24', empId: 'e5', courseId: 'c2', dateCompleted: '2019-01-01', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r25', empId: 'e5', courseId: 'c3', dateCompleted: '2025-08-29', nextDue: '2027-08-29', comments: '' },
+    { id: 'r26', empId: 'e5', courseId: 'c4', dateCompleted: '2025-02-16', nextDue: '2026-02-16', comments: 'Emailed Ms. Portia Cruz of HR for next schedule' },
+    { id: 'r27', empId: 'e5', courseId: 'c9', dateCompleted: '2025-06-24', nextDue: '', comments: '' },
+    // Pasay (e6) — MMC ONE & Orientation marked Completed
+    { id: 'r28', empId: 'e6', courseId: 'c1', dateCompleted: '2015-06-15', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r29', empId: 'e6', courseId: 'c2', dateCompleted: '2015-06-15', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r30', empId: 'e6', courseId: 'c3', dateCompleted: '2024-08-22', nextDue: '2026-08-22', comments: '' },
+    { id: 'r31', empId: 'e6', courseId: 'c4', dateCompleted: '2025-12-05', nextDue: '2026-12-05', comments: '' },
+    { id: 'r32', empId: 'e6', courseId: 'c12', dateCompleted: '2026-03-27', nextDue: '', comments: '' },
+    // Solis (e7) — MMC ONE & Orientation marked Completed
+    { id: 'r33', empId: 'e7', courseId: 'c1', dateCompleted: '2014-09-20', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r34', empId: 'e7', courseId: 'c2', dateCompleted: '2014-09-20', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r35', empId: 'e7', courseId: 'c3', dateCompleted: '2026-03-19', nextDue: '2028-03-19', comments: '' },
+    { id: 'r36', empId: 'e7', courseId: 'c4', dateCompleted: '2025-12-05', nextDue: '2026-12-06', comments: '' },
+    { id: 'r37', empId: 'e7', courseId: 'c10', dateCompleted: '2026-03-31', nextDue: '', comments: 'Enrolled' },
+    // Villareal (e8) — MMC ONE & Orientation marked Completed
+    { id: 'r38', empId: 'e8', courseId: 'c1', dateCompleted: '2024-06-04', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r39', empId: 'e8', courseId: 'c2', dateCompleted: '2024-06-04', nextDue: '', comments: 'Completed upon onboarding' },
+    { id: 'r40', empId: 'e8', courseId: 'c3', dateCompleted: '2024-07-23', nextDue: '2026-07-23', comments: '' },
+    { id: 'r41', empId: 'e8', courseId: 'c4', dateCompleted: '2025-12-10', nextDue: '2026-12-10', comments: '' },
+    { id: 'r42', empId: 'e8', courseId: 'c10', dateCompleted: '2025-04-04', nextDue: '', comments: '' },
+    // Villaluz (e9) — MMC ONE & Orientation marked Completed; BLS pending (date unknown)
+    { id: 'r43', empId: 'e9', courseId: 'c1', dateCompleted: '2023-01-01', nextDue: '', comments: 'Completed upon onboarding — verify exact date with HR' },
+    { id: 'r44', empId: 'e9', courseId: 'c2', dateCompleted: '2023-01-01', nextDue: '', comments: 'Completed upon onboarding — verify exact date with HR' },
+    { id: 'r45', empId: 'e9', courseId: 'c3', dateCompleted: '', nextDue: '', comments: '' },
+    // Villaluz — DR RED Pending (has not attended any Fire Drill yet)
+    { id: 'r46', empId: 'e9', courseId: 'c13', dateCompleted: '', nextDue: '', comments: 'Has not attended any Emergency Fire Drill yet' },
+    // Villaluz — DR DCH Pending (has not attended any Earthquake Drill yet)
+    { id: 'r47', empId: 'e9', courseId: 'c14', dateCompleted: '', nextDue: '', comments: 'Has not attended any Emergency Earthquake Drill yet' },
+    // ===== BCP / Emergency Table Top Drill (c5) =====
+    // Basilio — Apr 21 2026
+    { id: 'r50', empId: 'e2', courseId: 'c5', dateCompleted: '2026-04-21', nextDue: '2027-04-21', comments: '' },
+    // Calica — Apr 21 2026
+    { id: 'r51', empId: 'e3', courseId: 'c5', dateCompleted: '2026-04-21', nextDue: '2027-04-21', comments: '' },
+    // Caringal — Mar 10 2026
+    { id: 'r52', empId: 'e4', courseId: 'c5', dateCompleted: '2026-03-10', nextDue: '2027-03-10', comments: '' },
+    // Pahila — Mar 10 2026
+    { id: 'r53', empId: 'e5', courseId: 'c5', dateCompleted: '2026-03-10', nextDue: '2027-03-10', comments: '' },
+    // Pasay — Apr 21 2026
+    { id: 'r54', empId: 'e6', courseId: 'c5', dateCompleted: '2026-04-21', nextDue: '2027-04-21', comments: '' },
+    // Bansagan — May 12 2026
+    { id: 'r55', empId: 'e7', courseId: 'c5', dateCompleted: '2026-05-12', nextDue: '2027-05-12', comments: '' },
+    // Villareal — May 12 2026
+    { id: 'r56', empId: 'e8', courseId: 'c5', dateCompleted: '2026-05-12', nextDue: '2027-05-12', comments: '' },
+    // Villaluz — Pending
+    { id: 'r57', empId: 'e9', courseId: 'c5', dateCompleted: '', nextDue: '', comments: '' },
+    // ===== Emergency Fire Drill (c13) — Mar 27 2026 =====
+    // Basilio
+    { id: 'r60', empId: 'e2', courseId: 'c13', dateCompleted: '2026-03-27', nextDue: '2027-03-27', comments: '' },
+    // Calica
+    { id: 'r61', empId: 'e3', courseId: 'c13', dateCompleted: '2026-03-27', nextDue: '2027-03-27', comments: '' },
+    // Caringal
+    { id: 'r62', empId: 'e4', courseId: 'c13', dateCompleted: '2026-03-27', nextDue: '2027-03-27', comments: '' },
+    // Pahila
+    { id: 'r63', empId: 'e5', courseId: 'c13', dateCompleted: '2026-03-27', nextDue: '2027-03-27', comments: '' },
+    // Pasay
+    { id: 'r64', empId: 'e6', courseId: 'c13', dateCompleted: '2026-03-27', nextDue: '2027-03-27', comments: '' },
+    // Bansagan — DID NOT ATTEND, Pending
+    { id: 'r65', empId: 'e7', courseId: 'c13', dateCompleted: '', nextDue: '', comments: 'Did not attend Mar 27 2026 drill' },
+    // Villareal
+    { id: 'r66', empId: 'e8', courseId: 'c13', dateCompleted: '2026-03-27', nextDue: '2027-03-27', comments: '' },
+    // Villaluz
+    { id: 'r67', empId: 'e9', courseId: 'c13', dateCompleted: '2026-03-27', nextDue: '2027-03-27', comments: '' },
+    // ===== Emergency Earthquake Drill (c14) — Mar 12 2026 =====
+    // Basilio — DID NOT ATTEND, Pending
+    { id: 'r70', empId: 'e2', courseId: 'c14', dateCompleted: '', nextDue: '', comments: 'Did not attend Mar 12 2026 drill' },
+    // Calica
+    { id: 'r71', empId: 'e3', courseId: 'c14', dateCompleted: '2026-03-12', nextDue: '2027-03-12', comments: '' },
+    // Caringal
+    { id: 'r72', empId: 'e4', courseId: 'c14', dateCompleted: '2026-03-12', nextDue: '2027-03-12', comments: '' },
+    // Pahila
+    { id: 'r73', empId: 'e5', courseId: 'c14', dateCompleted: '2026-03-12', nextDue: '2027-03-12', comments: '' },
+    // Pasay
+    { id: 'r74', empId: 'e6', courseId: 'c14', dateCompleted: '2026-03-12', nextDue: '2027-03-12', comments: '' },
+    // Bansagan
+    { id: 'r75', empId: 'e7', courseId: 'c14', dateCompleted: '2026-03-12', nextDue: '2027-03-12', comments: '' },
+    // Villareal
+    { id: 'r76', empId: 'e8', courseId: 'c14', dateCompleted: '2026-03-12', nextDue: '2027-03-12', comments: '' },
+    // Villaluz
+    { id: 'r77', empId: 'e9', courseId: 'c14', dateCompleted: '2026-03-12', nextDue: '2027-03-12', comments: '' }
+  ]
+};
+
+let db = {};
+
+function loadDB() {
+  const saved = localStorage.getItem('creg_training_tracker');
+  if (saved) { try { db = JSON.parse(saved); } catch(e) { db = JSON.parse(JSON.stringify(DEFAULT_DATA)); } }
+  else { db = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+}
+
+function saveDB() {
+  localStorage.setItem('creg_training_tracker', JSON.stringify(db));
+}
+
+function genId() { return 'x' + Math.random().toString(36).substr(2,9); }
+
+// ===== STATUS ENGINE =====
+function computeStatus(record, course) {
+  if (!course) return { label: 'Unknown', cls: 'badge-pending', days: null };
+  if (course.recurring === 'no') {
+    if (!record.dateCompleted) return { label: 'Pending', cls: 'badge-pending', days: null };
+    return { label: 'Completed', cls: 'badge-completed', days: null };
+  }
+  // Recurring
+  if (!record.dateCompleted) return { label: 'Pending', cls: 'badge-pending', days: null };
+  const due = record.nextDue ? new Date(record.nextDue) : null;
+  if (!due || isNaN(due)) return { label: 'Valid', cls: 'badge-valid', days: null };
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = Math.ceil((due - today) / (1000*60*60*24));
+  if (days < 0) return { label: 'Overdue', cls: 'badge-overdue', days };
+  if (days <= 30) return { label: 'Expiring Soon', cls: 'badge-expiring', days };
+  if (days <= 90) return { label: 'Due in 90 Days', cls: 'badge-due90', days };
+  return { label: 'Valid', cls: 'badge-valid', days };
+}
+
+function getEmp(id) { return db.employees.find(e => e.id === id); }
+function getCourse(id) { return db.courses.find(c => c.id === id); }
+
+// ===== NAVIGATION =====
+const pageInfo = {
+  dashboard: { title: 'Dashboard', sub: 'Overview of team training compliance' },
+  records: { title: 'Training Records', sub: 'All training completions and due dates' },
+  matrix: { title: 'Compliance Matrix', sub: 'Visual overview by employee and training' },
+  employees: { title: 'Employees', sub: 'Manage team roster' },
+  catalog: { title: 'Training Catalog', sub: 'Manage training courses and renewal rules' },
+  print: { title: 'Print & Export', sub: 'Generate compliance reports' },
+  settings: { title: 'Data & Settings', sub: 'Backup, restore, and reset data' }
+};
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  document.getElementById('topbar-title').textContent = pageInfo[page].title;
+  document.getElementById('topbar-sub').textContent = pageInfo[page].sub;
+  if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'records') renderRecords();
+  if (page === 'matrix') renderMatrix();
+  if (page === 'employees') renderEmployees();
+  if (page === 'catalog') renderCatalog();
+  if (page === 'print') renderPrintSelects();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ===== DASHBOARD =====
+let chartTraining = null, chartStatus = null;
+
+function renderDashboard() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  document.getElementById('print-date-dash').textContent = today.toLocaleDateString('en-PH', {year:'numeric',month:'long',day:'numeric'});
+
+  const activeEmps = db.employees.filter(e => e.status === 'active');
+  const activeRecs = db.records.filter(r => {
+    const emp = getEmp(r.empId);
+    return emp && emp.status === 'active';
+  });
+
+  let overdue = 0, expiringSoon = 0, due90 = 0, valid = 0, pending = 0;
+  activeRecs.forEach(r => {
+    const course = getCourse(r.courseId);
+    const s = computeStatus(r, course);
+    if (s.label === 'Overdue') overdue++;
+    else if (s.label === 'Expiring Soon') expiringSoon++;
+    else if (s.label === 'Due in 90 Days') due90++;
+    else if (s.label === 'Pending') pending++;
+    else valid++;
+  });
+
+  const total = activeRecs.length;
+  // Compliant = not Overdue and not Pending (expiring/due-soon are still active)
+  const pct = total > 0 ? Math.round(((total - overdue - pending) / total) * 100) : 100;
+
+  const kpis = [
+    { label: 'Active Staff', value: activeEmps.length, icon: 'ti-users', color: '--primary', bg: '--primary-light' },
+    { label: 'Training Records', value: activeRecs.length, icon: 'ti-clipboard-list', color: '--secondary', bg: '--secondary-light' },
+    { label: 'Compliance Rate', value: pct + '%', icon: 'ti-chart-pie', color: '--success', bg: '--success-light' },
+    { label: 'Overdue', value: overdue, icon: 'ti-alert-circle', color: '--danger', bg: '--danger-light' },
+    { label: 'Expiring Soon', value: expiringSoon, icon: 'ti-clock', color: '--warning', bg: '--warning-light' },
+    { label: 'Due in 90 Days', value: due90, icon: 'ti-calendar-due', color: '--warning', bg: '--warning-light' },
+    { label: 'Pending', value: pending, icon: 'ti-hourglass', color: '--neutral', bg: '--neutral-light' }
+  ];
+
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k => {
+    const isOverdue = k.label === 'Overdue' && k.value > 0;
+    const pulse = isOverdue ? 'box-shadow:0 0 0 3px var(--danger-light),0 0 0 5px #f0b9a6;animation:pulse 2s infinite;' : '';
+    return `<div class="kpi-card" style="--kpi-color:var(${k.color});--kpi-bg:var(${k.bg});${pulse}">
+      <div class="kpi-icon"><i class="ti ${k.icon}"></i></div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-label">${k.label}</div>
+    </div>`;
+  }).join('');
+
+  // Alerts
+  const alertItems = [];
+  activeRecs.forEach(r => {
+    const emp = getEmp(r.empId);
+    const course = getCourse(r.courseId);
+    const s = computeStatus(r, course);
+    if (s.label === 'Overdue' || s.label === 'Expiring Soon' || s.label === 'Due in 90 Days') {
+      alertItems.push({ emp, course, s, r });
+    }
+  });
+  alertItems.sort((a,b) => (a.s.days||9999) - (b.s.days||9999));
+
+  const ac = document.getElementById('alerts-container');
+  if (alertItems.length === 0) {
+    ac.innerHTML = '<div class="empty-state"><i class="ti ti-circle-check" style="color:var(--success);"></i><p>No alerts. All active staff are compliant.</p></div>';
+  } else {
+    ac.innerHTML = alertItems.map(item => {
+      const cls = item.s.label === 'Overdue' ? 'alert-overdue' : 'alert-expiring';
+      const daysText = item.s.days !== null ? (item.s.days < 0 ? `${Math.abs(item.s.days)} days overdue` : `${item.s.days} days left`) : '';
+      const dueDateText = item.r.nextDue ? `· Due: ${fmtDate(item.r.nextDue)}` : '';
+      const icon = item.s.label === 'Overdue' ? 'ti-alert-circle' : 'ti-clock';
+      const iconColor = item.s.label === 'Overdue' ? 'var(--danger)' : 'var(--warning)';
+      return `<div class="alert-row ${cls}">
+        <i class="ti ${icon}" style="font-size:18px;color:${iconColor};flex-shrink:0;"></i>
+        <div class="alert-text">
+          <strong>${item.emp ? item.emp.name : '—'}</strong> — ${item.course ? item.course.name : '—'}
+          <span style="color:var(--text-light);font-size:12px;margin-left:8px;">${daysText} ${dueDateText}</span>
+        </div>
+        <span class="badge ${item.s.cls}">${item.s.label}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Charts
+  const ALIASES = {
+    'c1': 'ONE', 'c2': 'DOC', 'c3': 'BLS', 'c4': 'SAFETY',
+    'c5': 'BCP', 'c13': 'DR RED', 'c14': 'DR DCH'
+  };
+  const mandatoryCourses = db.courses.filter(c => c.type === 'Mandatory' && c.active === 'active');
+  const trainingLabels = mandatoryCourses.map(c => ALIASES[c.id] || c.name.substr(0,8));
+  const trainingCompliance = mandatoryCourses.map(c => {
+    const recs = activeRecs.filter(r => r.courseId === c.id);
+    if (!recs.length) return 0;
+    // Compliant = currently active (not Overdue, not Pending)
+    const COMPLIANT = ['Valid','Completed','Done','Expiring Soon','Due in 90 Days'];
+    const ok = recs.filter(r => { const s = computeStatus(r,c); return COMPLIANT.includes(s.label); }).length;
+    return Math.round((ok/recs.length)*100);
+  });
+  // Color bars: green=100% all valid | yellow=has expiring/due-soon but no failures | red=has overdue or pending
+  const barColors = mandatoryCourses.map(c => {
+    const recs = activeRecs.filter(r => r.courseId === c.id);
+    const hasFailure = recs.some(r => { const s = computeStatus(r,c); return s.label==='Overdue'||s.label==='Pending'; });
+    const hasWarning = recs.some(r => { const s = computeStatus(r,c); return s.label==='Expiring Soon'||s.label==='Due in 90 Days'; });
+    if (hasFailure) return '#D85A30';
+    if (hasWarning) return '#EF9F27';
+    return '#1D9E75';
+  });
+
+  const ctxT = document.getElementById('trainingChart').getContext('2d');
+  if (chartTraining) chartTraining.destroy();
+  chartTraining = new Chart(ctxT, {
+    type: 'bar',
+    data: { labels: trainingLabels, datasets: [{ data: trainingCompliance, backgroundColor: barColors, borderRadius: 6, borderSkipped: false }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { title: (items) => { const c = mandatoryCourses[items[0].dataIndex]; return c ? c.name : ''; }, label: (item) => ` ${item.raw}% compliant` } }
+      },
+      scales: {
+        y: { min: 0, max: 100, ticks: { callback: v => v+'%', font: { size: 11 } }, grid: { color: '#f0ede6' } },
+        x: { ticks: { font: { size: 11, weight: '600' } }, grid: { display: false } }
+      }
+    }
+  });
+
+  const ctxS = document.getElementById('statusChart').getContext('2d');
+  if (chartStatus) chartStatus.destroy();
+  chartStatus = new Chart(ctxS, {
+    type: 'doughnut',
+    data: {
+      labels: ['Valid/Completed', 'Due in 90 Days', 'Expiring Soon', 'Overdue', 'Pending'],
+      datasets: [{ data: [valid, due90, expiringSoon, overdue, pending], backgroundColor: ['#1D9E75','#f5c155','#EF9F27','#D85A30','#888780'], borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10, usePointStyle: true, pointStyleWidth: 8 } } }, cutout: '62%' }
+  });
+}
+
+// ===== RECORDS =====
+function renderRecords() {
+  populateRecordFilters();
+  const search = (document.getElementById('rec-search')?.value || '').toLowerCase();
+  const filterEmp = document.getElementById('rec-filter-emp')?.value || '';
+  const filterCourse = document.getElementById('rec-filter-course')?.value || '';
+  const filterStatus = document.getElementById('rec-filter-status')?.value || '';
+  const filterActive = document.getElementById('rec-filter-active')?.value || 'active';
+
+  let recs = [...db.records];
+  if (filterActive === 'active') recs = recs.filter(r => { const e = getEmp(r.empId); return e && e.status === 'active'; });
+  if (filterEmp) recs = recs.filter(r => r.empId === filterEmp);
+  if (filterCourse) recs = recs.filter(r => r.courseId === filterCourse);
+  if (search) recs = recs.filter(r => {
+    const e = getEmp(r.empId); const c = getCourse(r.courseId);
+    return (e && e.name.toLowerCase().includes(search)) || (c && c.name.toLowerCase().includes(search));
+  });
+
+  const tbody = document.getElementById('records-tbody');
+  if (recs.length === 0) { tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="ti ti-inbox"></i><p>No records found.</p></div></td></tr>`; return; }
+
+  tbody.innerHTML = recs.map(r => {
+    const emp = getEmp(r.empId);
+    const course = getCourse(r.courseId);
+    const s = computeStatus(r, course);
+    if (filterStatus && s.label !== filterStatus) return '';
+    const daysText = (course && course.recurring === 'no') ? '<span style="color:var(--text-light);font-style:italic;">N/A</span>' : (s.days !== null ? (s.days < 0 ? `<span style="color:var(--danger);">${Math.abs(s.days)}d overdue</span>` : `<span>${s.days}d</span>`) : '—');
+    const empInactive = emp && emp.status === 'inactive' ? `<span class="badge badge-inactive" style="margin-left:4px;font-size:10px;">Inactive</span>` : '';
+    return `<tr>
+      <td><span style="font-weight:500;">${emp ? emp.name : '—'}</span>${empInactive}<br><small style="color:var(--text-light);font-family:var(--mono);">${emp ? emp.empId : ''}</small></td>
+      <td>${course ? course.name : '—'}</td>
+      <td><span class="tag ${course?.type?.toLowerCase()}">${course ? course.type : '—'}</span></td>
+      <td>${r.dateCompleted ? fmtDate(r.dateCompleted) : '<span style="color:var(--text-light);">—</span>'}</td>
+      <td>${course && course.recurring === 'no' ? '<span style="color:var(--text-light);font-style:italic;">N/A</span>' : (r.nextDue ? fmtDate(r.nextDue) : '<span style="color:var(--text-light);">—</span>')}</td>
+      <td>${daysText}</td>
+      <td><span class="badge ${s.cls}">${s.label}</span></td>
+      <td class="no-print">
+        <div style="display:flex;gap:6px;">
+          <button class="btn-icon" title="Edit" onclick="editRecord('${r.id}')"><i class="ti ti-pencil"></i></button>
+          <button class="btn-icon" title="Delete" style="color:var(--danger);" onclick="deleteRecord('${r.id}')"><i class="ti ti-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function populateRecordFilters() {
+  const empSel = document.getElementById('rec-filter-emp');
+  const curEmp = empSel?.value;
+  if (empSel) {
+    empSel.innerHTML = '<option value="">All Employees</option>' + db.employees.map(e => `<option value="${e.id}" ${e.id===curEmp?'selected':''}>${e.name}${e.status==='inactive'?' (Inactive)':''}</option>`).join('');
+  }
+  const courseSel = document.getElementById('rec-filter-course');
+  const curCourse = courseSel?.value;
+  if (courseSel) {
+    courseSel.innerHTML = '<option value="">All Courses</option>' + db.courses.map(c => `<option value="${c.id}" ${c.id===curCourse?'selected':''}>${c.name}</option>`).join('');
+  }
+}
+
+// ===== MATRIX =====
+function renderMatrix() {
+  const ALIASES = {
+    'c1': 'ONE', 'c2': 'DOC', 'c3': 'BLS', 'c4': 'SAFETY',
+    'c5': 'BCP', 'c13': 'DR RED', 'c14': 'DR DCH'
+  };
+  const mandatoryCourses = db.courses.filter(c => c.type === 'Mandatory' && c.active === 'active');
+  const activeEmps = db.employees.filter(e => e.status === 'active');
+
+  let html = '<thead><tr><th class="employee-col">Employee</th>';
+  mandatoryCourses.forEach(c => {
+    const alias = ALIASES[c.id] || c.name.substr(0,6);
+    html += `<th class="training-col" title="${c.name}" style="text-align:center;font-size:11.5px;letter-spacing:0.04em;color:var(--primary);font-weight:700;">${alias}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  activeEmps.forEach(emp => {
+    html += `<tr><td class="employee-name">${emp.name}</td>`;
+    mandatoryCourses.forEach(course => {
+      const rec = db.records.find(r => r.empId === emp.id && r.courseId === course.id);
+      if (!rec) {
+        html += `<td><div class="matrix-cell"><span class="matrix-label" style="color:var(--neutral);background:var(--neutral-light);" title="No record">—</span></div></td>`;
+        return;
+      }
+      const s = computeStatus(rec, course);
+      let label = 'Valid', bg = '', color = '', border = '';
+      if (s.label === 'Completed') {
+        label = 'Done'; bg = 'var(--success)'; color = '#fff'; border = 'none';
+      } else if (s.label === 'Valid') {
+        label = 'Valid'; bg = 'transparent'; color = 'var(--success)'; border = '1.5px solid var(--success)';
+      } else if (s.label === 'Overdue') {
+        label = 'Overdue'; bg = 'var(--danger-light)'; color = 'var(--danger)'; border = '1.5px solid #f0b9a6';
+      } else if (s.label === 'Expiring Soon') {
+        label = 'Soon'; bg = '#FAEEDA'; color = '#c17a10'; border = '1.5px solid #f5d79a';
+      } else if (s.label === 'Due in 90 Days') {
+        label = '~90d'; bg = '#FFF8EC'; color = '#c17a10'; border = '1.5px solid #f5d79a';
+      } else if (s.label === 'Pending') {
+        label = 'Pending'; bg = 'var(--neutral-light)'; color = 'var(--neutral)'; border = 'none';
+      }
+      const tooltip = `${emp.name} · ${course.name} · ${s.label}${s.days !== null ? (' · ' + (s.days < 0 ? Math.abs(s.days)+'d overdue' : s.days+'d left')) : ''}`;
+      html += `<td><div class="matrix-cell"><span class="matrix-label" style="background:${bg};color:${color};border:${border};" title="${tooltip}">${label}</span></div></td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('matrix-table').innerHTML = html;
+}
+
+// ===== EMPLOYEES =====
+function renderEmployees() {
+  const search = (document.getElementById('emp-search')?.value || '').toLowerCase();
+  const filter = document.getElementById('emp-filter-status')?.value || 'active';
+
+  let emps = [...db.employees];
+  if (filter === 'active') emps = emps.filter(e => e.status === 'active');
+  if (filter === 'inactive') emps = emps.filter(e => e.status === 'inactive');
+  if (search) emps = emps.filter(e => e.name.toLowerCase().includes(search) || e.empId.includes(search));
+
+  const container = document.getElementById('employees-container');
+  if (emps.length === 0) { container.innerHTML = '<div class="empty-state"><i class="ti ti-users"></i><p>No employees found.</p></div>'; return; }
+
+  container.innerHTML = emps.map(emp => {
+    const initials = emp.name.split(',')[0].trim().substr(0,2).toUpperCase();
+    const recs = db.records.filter(r => r.empId === emp.id);
+    const statuses = recs.map(r => computeStatus(r, getCourse(r.courseId)));
+    const overdueCount = statuses.filter(s => s.label === 'Overdue').length;
+    const expiringCount = statuses.filter(s => s.label === 'Expiring Soon').length;
+    const completedCount = statuses.filter(s => s.label === 'Valid' || s.label === 'Completed').length;
+
+    return `<div class="emp-card">
+      <div class="emp-card-header">
+        <div class="emp-avatar" style="${emp.status==='inactive'?'background:var(--neutral-light);color:var(--neutral);':''}">${initials}</div>
+        <div style="flex:1;">
+          <div class="emp-name">${emp.name} ${emp.status==='inactive'?`<span class="badge badge-inactive" style="font-size:11px;">${emp.inactiveReason||'Inactive'}</span>`:''}</div>
+          <div class="emp-id">ID: ${emp.empId} · ${emp.dept}</div>
+        </div>
+        <div style="display:flex;gap:6px;" class="no-print">
+          <button class="btn btn-secondary btn-sm" onclick="editEmployee('${emp.id}')"><i class="ti ti-pencil"></i> Edit</button>
+          ${emp.status==='active'
+            ? `<button class="btn btn-danger btn-sm" onclick="deactivateEmployee('${emp.id}')"><i class="ti ti-user-off"></i> Deactivate</button>`
+            : `<button class="btn btn-success btn-sm" onclick="reactivateEmployee('${emp.id}')"><i class="ti ti-user-check"></i> Reactivate</button>`}
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="badge badge-valid"><span class="badge-dot"></span>${completedCount} Valid/Completed</span>
+        ${expiringCount ? `<span class="badge badge-expiring"><span class="badge-dot"></span>${expiringCount} Expiring</span>` : ''}
+        ${overdueCount ? `<span class="badge badge-overdue"><span class="badge-dot"></span>${overdueCount} Overdue</span>` : ''}
+        <span class="badge badge-pending">${recs.length} Total Records</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== CATALOG =====
+function renderCatalog() {
+  const search = (document.getElementById('cat-search')?.value || '').toLowerCase();
+  let courses = [...db.courses];
+  if (search) courses = courses.filter(c => c.name.toLowerCase().includes(search));
+
+  const tbody = document.getElementById('catalog-tbody');
+  if (courses.length === 0) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="ti ti-books"></i><p>No courses found.</p></div></td></tr>`; return; }
+
+  tbody.innerHTML = courses.map(c => {
+    const recCount = db.records.filter(r => r.courseId === c.id).length;
+    const activeLabel = c.active === 'active' ? '' : '<span class="badge badge-inactive" style="margin-left:6px;">Archived</span>';
+    return `<tr style="${c.active==='inactive'?'opacity:0.6;':''}">
+      <td><span style="font-weight:500;">${c.name}</span>${activeLabel}</td>
+      <td><span class="tag ${c.type.toLowerCase()}">${c.type}</span></td>
+      <td>${c.recurring === 'yes' ? '<span style="color:var(--primary);">Yes</span>' : 'No'}</td>
+      <td>${c.recurring === 'yes' ? `${c.renewalMonths} months` : '—'}</td>
+      <td>${recCount}</td>
+      <td class="no-print"><div style="display:flex;gap:6px;">
+        <button class="btn-icon" onclick="editCourse('${c.id}')"><i class="ti ti-pencil"></i></button>
+        ${c.active==='active'
+          ? `<button class="btn-icon" title="Archive" onclick="archiveCourse('${c.id}')"><i class="ti ti-archive"></i></button>`
+          : `<button class="btn-icon" title="Restore" onclick="restoreCourse('${c.id}')"><i class="ti ti-restore"></i></button>`}
+        <button class="btn-icon" style="color:var(--danger);" onclick="deleteCourse('${c.id}')"><i class="ti ti-trash"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== MODALS =====
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// --- Record Modal ---
+function openAddRecord(empId) {
+  document.getElementById('rec-edit-id').value = '';
+  document.getElementById('addRecordTitle').textContent = 'Add Training Record';
+  populateRecordModal();
+  if (empId) document.getElementById('rec-emp-id').value = empId;
+  document.getElementById('rec-date-completed').value = '';
+  document.getElementById('rec-next-due').value = '';
+  document.getElementById('rec-comments').value = '';
+  openModal('addRecordModal');
+}
+
+function populateRecordModal() {
+  const empSel = document.getElementById('rec-emp-id');
+  empSel.innerHTML = db.employees.map(e => `<option value="${e.id}">${e.name}${e.status==='inactive'?' (Inactive)':''}</option>`).join('');
+  const courseSel = document.getElementById('rec-course-id');
+  courseSel.innerHTML = db.courses.filter(c => c.active==='active').map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function onCourseSelect() {
+  const courseId = document.getElementById('rec-course-id').value;
+  const course = getCourse(courseId);
+  const dateVal = document.getElementById('rec-date-completed').value;
+  const nextDueGroup = document.getElementById('rec-next-due-group');
+  if (course && course.recurring === 'yes') {
+    nextDueGroup.style.display = 'block';
+    document.getElementById('rec-next-due-label').textContent = '(auto-calculated)';
+    if (dateVal && course.renewalMonths) {
+      const d = new Date(dateVal);
+      d.setMonth(d.getMonth() + parseInt(course.renewalMonths));
+      document.getElementById('rec-next-due').value = d.toISOString().split('T')[0];
+    }
+  } else {
+    nextDueGroup.style.display = 'none';
+    document.getElementById('rec-next-due').value = '';
+    document.getElementById('rec-next-due-label').textContent = '(N/A)';
+  }
+}
+
+function editRecord(id) {
+  const r = db.records.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('rec-edit-id').value = id;
+  document.getElementById('addRecordTitle').textContent = 'Edit Training Record';
+  populateRecordModal();
+  document.getElementById('rec-emp-id').value = r.empId;
+  document.getElementById('rec-course-id').value = r.courseId;
+  document.getElementById('rec-date-completed').value = r.dateCompleted || '';
+  document.getElementById('rec-next-due').value = r.nextDue || '';
+  document.getElementById('rec-comments').value = r.comments || '';
+  // Show/hide next due based on course type
+  const course = getCourse(r.courseId);
+  const nextDueGroup = document.getElementById('rec-next-due-group');
+  if (course && course.recurring === 'yes') {
+    nextDueGroup.style.display = 'block';
+    document.getElementById('rec-next-due-label').textContent = '(auto-calculated)';
+  } else {
+    nextDueGroup.style.display = 'none';
+    document.getElementById('rec-next-due-label').textContent = '(N/A)';
+  }
+  openModal('addRecordModal');
+}
+
+document.getElementById('rec-date-completed').addEventListener('change', onCourseSelect);
+document.getElementById('rec-course-id').addEventListener('change', onCourseSelect);
+
+function saveRecord() {
+  const empId = document.getElementById('rec-emp-id').value;
+  const courseId = document.getElementById('rec-course-id').value;
+  const dateCompleted = document.getElementById('rec-date-completed').value;
+  const course = getCourse(courseId);
+  // Enforce: elective and non-recurring courses NEVER store a nextDue
+  const nextDue = (course && course.recurring === 'yes') ? document.getElementById('rec-next-due').value : '';
+  const comments = document.getElementById('rec-comments').value.trim();
+  if (!empId || !courseId) { toast('Please select employee and course.', 'error'); return; }
+
+  const editId = document.getElementById('rec-edit-id').value;
+  if (editId) {
+    const idx = db.records.findIndex(r => r.id === editId);
+    if (idx > -1) db.records[idx] = { ...db.records[idx], empId, courseId, dateCompleted, nextDue, comments };
+    toast('Record updated.', 'success');
+  } else {
+    const exists = db.records.find(r => r.empId === empId && r.courseId === courseId);
+    if (exists) { toast('This employee already has a record for this training. Edit the existing record instead.', 'error'); return; }
+    db.records.push({ id: genId(), empId, courseId, dateCompleted, nextDue, comments });
+    toast('Record added.', 'success');
+  }
+  saveDB();
+  closeModal('addRecordModal');
+  renderRecords();
+}
+
+function deleteRecord(id) {
+  showConfirm('Delete Record', 'Are you sure you want to delete this training record? This cannot be undone.', () => {
+    db.records = db.records.filter(r => r.id !== id);
+    saveDB(); toast('Record deleted.'); renderRecords();
+  });
+}
+
+// --- Employee Modal ---
+document.getElementById('emp-status').addEventListener('change', function() {
+  document.getElementById('emp-inactive-reason-wrap').style.display = this.value === 'inactive' ? 'block' : 'none';
+});
+
+function editEmployee(id) {
+  const emp = getEmp(id);
+  if (!emp) return;
+  document.getElementById('emp-edit-id').value = id;
+  document.getElementById('addEmpTitle').textContent = 'Edit Employee';
+  document.getElementById('emp-id-input').value = emp.empId;
+  document.getElementById('emp-name').value = emp.name;
+  document.getElementById('emp-dept').value = emp.dept;
+  document.getElementById('emp-date-hired').value = emp.dateHired || '';
+  document.getElementById('emp-status').value = emp.status;
+  document.getElementById('emp-inactive-reason').value = emp.inactiveReason || 'Transferred';
+  document.getElementById('emp-inactive-reason-wrap').style.display = emp.status === 'inactive' ? 'block' : 'none';
+  openModal('addEmpModal');
+}
+
+function saveEmployee() {
+  const empId = document.getElementById('emp-id-input').value.trim();
+  const name = document.getElementById('emp-name').value.trim();
+  const dept = document.getElementById('emp-dept').value.trim();
+  const dateHired = document.getElementById('emp-date-hired').value;
+  const status = document.getElementById('emp-status').value;
+  const inactiveReason = status === 'inactive' ? document.getElementById('emp-inactive-reason').value : '';
+  if (!empId || !name) { toast('Employee ID and Name are required.', 'error'); return; }
+
+  const editId = document.getElementById('emp-edit-id').value;
+  if (editId) {
+    const idx = db.employees.findIndex(e => e.id === editId);
+    if (idx > -1) db.employees[idx] = { ...db.employees[idx], empId, name, dept, dateHired, status, inactiveReason };
+    toast('Employee updated.', 'success');
+  } else {
+    db.employees.push({ id: genId(), empId, name, dept, dateHired, status, inactiveReason });
+    toast('Employee added.', 'success');
+  }
+  saveDB(); closeModal('addEmpModal');
+  document.getElementById('emp-edit-id').value = '';
+  document.getElementById('addEmpTitle').textContent = 'Add Employee';
+  renderEmployees();
+}
+
+function deactivateEmployee(id) {
+  const emp = getEmp(id);
+  showConfirm('Deactivate Employee', `Mark ${emp?.name} as inactive? Their records will be preserved but excluded from compliance counts.`, () => {
+    const idx = db.employees.findIndex(e => e.id === id);
+    if (idx > -1) { db.employees[idx].status = 'inactive'; db.employees[idx].inactiveReason = 'Transferred'; }
+    saveDB(); toast('Employee deactivated.'); renderEmployees();
+  });
+}
+
+function reactivateEmployee(id) {
+  const emp = getEmp(id);
+  showConfirm('Reactivate Employee', `Mark ${emp?.name} as active again?`, () => {
+    const idx = db.employees.findIndex(e => e.id === id);
+    if (idx > -1) { db.employees[idx].status = 'active'; db.employees[idx].inactiveReason = ''; }
+    saveDB(); toast('Employee reactivated.', 'success'); renderEmployees();
+  });
+}
+
+// --- Course Modal ---
+function toggleRenewal() {
+  const val = document.getElementById('course-recurring').value;
+  document.getElementById('renewal-period-wrap').style.display = val === 'yes' ? 'block' : 'none';
+}
+
+function editCourse(id) {
+  const c = getCourse(id);
+  if (!c) return;
+  document.getElementById('course-edit-id').value = id;
+  document.getElementById('addCourseTitle').textContent = 'Edit Training Course';
+  document.getElementById('course-name').value = c.name;
+  document.getElementById('course-type').value = c.type;
+  document.getElementById('course-recurring').value = c.recurring;
+  document.getElementById('course-renewal').value = c.renewalMonths || '';
+  document.getElementById('course-active').value = c.active;
+  document.getElementById('renewal-period-wrap').style.display = c.recurring === 'yes' ? 'block' : 'none';
+  openModal('addCourseModal');
+}
+
+function saveCourse() {
+  const name = document.getElementById('course-name').value.trim();
+  const type = document.getElementById('course-type').value;
+  const recurring = document.getElementById('course-recurring').value;
+  const renewalMonths = recurring === 'yes' ? parseInt(document.getElementById('course-renewal').value) || null : null;
+  const active = document.getElementById('course-active').value;
+  if (!name) { toast('Course name is required.', 'error'); return; }
+
+  const editId = document.getElementById('course-edit-id').value;
+  if (editId) {
+    const idx = db.courses.findIndex(c => c.id === editId);
+    if (idx > -1) db.courses[idx] = { ...db.courses[idx], name, type, recurring, renewalMonths, active };
+    toast('Course updated.', 'success');
+  } else {
+    db.courses.push({ id: genId(), name, type, recurring, renewalMonths, active });
+    toast('Course added.', 'success');
+  }
+  saveDB(); closeModal('addCourseModal');
+  document.getElementById('course-edit-id').value = '';
+  document.getElementById('addCourseTitle').textContent = 'Add Training Course';
+  renderCatalog();
+}
+
+function archiveCourse(id) {
+  const c = getCourse(id);
+  showConfirm('Archive Course', `Archive "${c?.name}"? It will no longer appear as active but historical records are preserved.`, () => {
+    const idx = db.courses.findIndex(x => x.id === id);
+    if (idx > -1) db.courses[idx].active = 'inactive';
+    saveDB(); toast('Course archived.'); renderCatalog();
+  });
+}
+
+function restoreCourse(id) {
+  const idx = db.courses.findIndex(x => x.id === id);
+  if (idx > -1) db.courses[idx].active = 'active';
+  saveDB(); toast('Course restored.', 'success'); renderCatalog();
+}
+
+function deleteCourse(id) {
+  const c = getCourse(id);
+  const recCount = db.records.filter(r => r.courseId === id).length;
+  showConfirm('Delete Course', `Delete "${c?.name}"? ${recCount > 0 ? `This will also delete ${recCount} associated training record(s).` : ''} This cannot be undone.`, () => {
+    db.courses = db.courses.filter(x => x.id !== id);
+    db.records = db.records.filter(r => r.courseId !== id);
+    saveDB(); toast('Course deleted.'); renderCatalog();
+  });
+}
+
+// ===== CONFIRM DIALOG =====
+function showConfirm(title, message, onConfirm) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  const btn = document.getElementById('confirm-btn');
+  btn.onclick = () => { closeModal('confirmModal'); onConfirm(); };
+  openModal('confirmModal');
+}
+
+function confirmReset() {
+  showConfirm('Reset All Data', 'This will erase ALL your data and reload the default dataset. This cannot be undone.', () => {
+    db = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    saveDB(); toast('Data reset to default.'); navigate('dashboard');
+  });
+}
+
+// ===== PRINT =====
+function renderPrintSelects() {
+  const sel = document.getElementById('print-emp-select');
+  sel.innerHTML = db.employees.filter(e => e.status==='active').map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+}
+
+function printTeamReport() {
+  const w = window.open('', '_blank');
+  const today = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+  const activeEmps = db.employees.filter(e => e.status === 'active');
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CREG Training Compliance Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a1a2e; margin: 0; padding: 0; }
+    .page { padding: 30px 36px; }
+    .header { text-align: center; border-bottom: 2px solid #185FA5; padding-bottom: 14px; margin-bottom: 20px; }
+    .header h1 { font-size: 16pt; color: #185FA5; margin: 0 0 4px; }
+    .header p { color: #888; font-size: 10pt; margin: 0; }
+    h2 { font-size: 12pt; color: #185FA5; margin: 18px 0 8px; border-bottom: 1px solid #e4e2dc; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt; }
+    th { background: #E6F1FB; color: #185FA5; padding: 7px 10px; text-align: left; font-size: 9pt; }
+    td { padding: 6px 10px; border-bottom: 1px solid #f0ede6; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 9pt; font-weight: 600; }
+    .valid { background: #E1F5EE; color: #1D9E75; }
+    .overdue { background: #FAECE7; color: #D85A30; }
+    .expiring { background: #FAEEDA; color: #b87a10; }
+    .pending { background: #F1EFE8; color: #888780; }
+    .footer { text-align: center; font-size: 9pt; color: #aaa; margin-top: 30px; padding-top: 10px; border-top: 1px solid #e4e2dc; }
+    @media print { .page { padding: 10px; } }
+  </style></head><body><div class="page">
+  <div class="header"><h1>CREG Training Compliance Report</h1><p>Central Registration · Makati Medical Center · As of ${today}</p></div>`;
+
+  activeEmps.forEach(emp => {
+    const recs = db.records.filter(r => r.empId === emp.id);
+    html += `<h2>${emp.name} <small style="font-weight:400;color:#888;font-size:10pt;">· ID: ${emp.empId}</small></h2>`;
+    html += `<table><thead><tr><th>Training Course</th><th>Type</th><th>Date Completed</th><th>Next Due</th><th>Status</th><th>Comments</th></tr></thead><tbody>`;
+    recs.forEach(r => {
+      const course = getCourse(r.courseId);
+      const s = computeStatus(r, course);
+      const cls = s.label==='Overdue'?'overdue':s.label.includes('Expiring')||s.label.includes('Due')?'expiring':s.label==='Pending'?'pending':'valid';
+      html += `<tr><td>${course?.name||'—'}</td><td>${course?.type||'—'}</td><td>${r.dateCompleted?fmtDate(r.dateCompleted):'—'}</td><td>${r.nextDue?fmtDate(r.nextDue):'—'}</td><td><span class="badge ${cls}">${s.label}</span></td><td>${r.comments||''}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  });
+
+  html += `<div class="footer">Generated: ${today} · CREG Training Tracker · Central Registration, MMC</div></div></body></html>`;
+  w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500);
+}
+
+function printEmpRecord() {
+  const empId = document.getElementById('print-emp-select').value;
+  const emp = getEmp(empId);
+  if (!emp) return;
+  const today = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+  const recs = db.records.filter(r => r.empId === emp.id);
+  const w = window.open('', '_blank');
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Training Record - ${emp.name}</title>
+  <style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a2e;padding:30px 36px;}h1{font-size:15pt;color:#185FA5;margin:0 0 4px;}p{font-size:10pt;color:#888;margin:0 0 20px;}table{width:100%;border-collapse:collapse;}th{background:#E6F1FB;color:#185FA5;padding:7px 10px;text-align:left;font-size:9pt;}td{padding:6px 10px;border-bottom:1px solid #f0ede6;font-size:10pt;}.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:9pt;font-weight:600;}.valid{background:#E1F5EE;color:#1D9E75;}.overdue{background:#FAECE7;color:#D85A30;}.expiring{background:#FAEEDA;color:#b87a10;}.pending{background:#F1EFE8;color:#888780;}.footer{text-align:center;font-size:9pt;color:#aaa;margin-top:30px;border-top:1px solid #e4e2dc;padding-top:10px;}</style>
+  </head><body>
+  <h1>${emp.name}</h1><p>Employee ID: ${emp.empId} · ${emp.dept} · As of ${today}</p>
+  <table><thead><tr><th>Training Course</th><th>Type</th><th>Date Completed</th><th>Next Due</th><th>Status</th><th>Comments</th></tr></thead><tbody>`;
+  recs.forEach(r => {
+    const course = getCourse(r.courseId);
+    const s = computeStatus(r, course);
+    const cls = s.label==='Overdue'?'overdue':s.label.includes('Expiring')||s.label.includes('Due')?'expiring':s.label==='Pending'?'pending':'valid';
+    html += `<tr><td>${course?.name||'—'}</td><td>${course?.type||'—'}</td><td>${r.dateCompleted?fmtDate(r.dateCompleted):'—'}</td><td>${r.nextDue?fmtDate(r.nextDue):'—'}</td><td><span class="badge ${cls}">${s.label}</span></td><td>${r.comments||''}</td></tr>`;
+  });
+  html += `</tbody></table><div class="footer">Generated: ${today} · CREG Training Tracker</div></body></html>`;
+  w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500);
+}
+
+function printAlertsReport() {
+  const today = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+  const alerts = [];
+  db.records.forEach(r => {
+    const emp = getEmp(r.empId);
+    if (!emp || emp.status !== 'active') return;
+    const course = getCourse(r.courseId);
+    const s = computeStatus(r, course);
+    if (s.label === 'Overdue' || s.label === 'Expiring Soon' || s.label === 'Due in 90 Days') {
+      alerts.push({ emp, course, s, r });
+    }
+  });
+  alerts.sort((a,b) => (a.s.days||9999)-(b.s.days||9999));
+  const w = window.open('', '_blank');
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CREG Training Alerts</title>
+  <style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1a1a2e;padding:30px 36px;}h1{font-size:15pt;color:#D85A30;margin:0 0 4px;}p{font-size:10pt;color:#888;margin:0 0 20px;}table{width:100%;border-collapse:collapse;}th{background:#FAECE7;color:#D85A30;padding:7px 10px;text-align:left;font-size:9pt;}td{padding:6px 10px;border-bottom:1px solid #f0ede6;font-size:10pt;}.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:9pt;font-weight:600;}.overdue{background:#FAECE7;color:#D85A30;}.expiring{background:#FAEEDA;color:#b87a10;}.footer{text-align:center;font-size:9pt;color:#aaa;margin-top:30px;border-top:1px solid #e4e2dc;padding-top:10px;}</style>
+  </head><body>
+  <h1>⚠ Training Alerts Report</h1><p>Central Registration · As of ${today} · ${alerts.length} item(s) requiring attention</p>
+  <table><thead><tr><th>Employee</th><th>Training</th><th>Due Date</th><th>Days</th><th>Status</th></tr></thead><tbody>`;
+  if (alerts.length === 0) html += '<tr><td colspan="5" style="text-align:center;color:#888;padding:20px;">No alerts at this time.</td></tr>';
+  alerts.forEach(a => {
+    const cls = a.s.label==='Overdue'?'overdue':'expiring';
+    const daysText = a.s.days!==null?(a.s.days<0?`${Math.abs(a.s.days)}d overdue`:`${a.s.days}d left`):'—';
+    html += `<tr><td>${a.emp?.name||'—'}</td><td>${a.course?.name||'—'}</td><td>${a.r.nextDue?fmtDate(a.r.nextDue):'—'}</td><td>${daysText}</td><td><span class="badge ${cls}">${a.s.label}</span></td></tr>`;
+  });
+  html += `</tbody></table><div class="footer">Generated: ${today} · CREG Training Tracker</div></body></html>`;
+  w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500);
+}
+
+// ===== DATA IMPORT/EXPORT =====
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `CREG_Training_Backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  toast('Backup exported.', 'success');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.employees || !data.courses || !data.records) throw new Error('Invalid format');
+      showConfirm('Import Data', 'This will replace all current data with the imported backup. Continue?', () => {
+        db = data; saveDB(); toast('Data imported successfully.', 'success'); navigate('dashboard');
+      });
+    } catch { toast('Invalid backup file.', 'error'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ===== UTILITIES =====
+function fmtDate(d) {
+  if (!d) return '—';
+  const date = new Date(d + 'T00:00:00');
+  return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function toast(msg, type = '') {
+  const tc = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.textContent = msg;
+  tc.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ===== INIT =====
+loadDB();
+document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+navigate('dashboard');
+</script>
+</body>
+</html>
