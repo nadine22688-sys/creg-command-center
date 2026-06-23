@@ -328,6 +328,16 @@ tbody tr:hover td{background:var(--paper)}
       </div>
       <div id="catalogChecklist"></div>
     </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">+ Add item not in list</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="text" class="fi" id="customItemName" placeholder="Item name e.g. Alcohol 70%" style="flex:2;min-width:160px">
+        <input type="number" class="fi" id="customItemQty" placeholder="Qty" style="width:65px" min="1">
+        <input type="text" class="fi" id="customItemUnit" placeholder="Unit" style="width:80px">
+        <button class="btn bgr bsm" onclick="addCustomItem()">+ Add</button>
+      </div>
+      <div id="customItemsList" style="margin-top:8px"></div>
+    </div>
     <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
       <button class="btn bbl" onclick="saveDeptReq()">Save Request</button>
       <button class="btn bo" onclick="copyLastMonth()" id="copyLastBtn">Copy Last Month</button>
@@ -1192,6 +1202,29 @@ async function markRcv(relId,itemId){
   renderDept();
 }
 
+async function editDeptItem(relId,itemId){
+  const rel=DEPT_RELS.find(r=>r.id===relId);if(!rel)return;
+  const item=(rel.items||[]).find(i=>i.id===itemId);if(!item)return;
+  const newName=prompt('Item name:',item.name);
+  if(newName===null)return;
+  const newQtyStr=prompt('Quantity:',item.qty);
+  if(newQtyStr===null)return;
+  const newUnit=prompt('Unit (e.g. REAMS, BOX, PCS):',item.unit);
+  if(newUnit===null)return;
+  const newNotes=prompt('Notes (optional - leave blank for none):',item.notes||'');
+  if(newNotes===null)return;
+  item.name=newName.trim()||item.name;
+  item.qty=parseFloat(newQtyStr)||item.qty;
+  item.unit=newUnit.trim().toUpperCase()||item.unit;
+  item.notes=newNotes.trim();
+  if(sb){
+    const{error}=await sb.from('dept_releases').update({items:rel.items}).eq('id',relId);
+    if(error){toast('Save failed: '+error.message,'err');return;}
+  } else saveLocalDept(DEPT_RELS);
+  toast('Item updated','ok');
+  renderDept();
+}
+
 async function markAllRcv(relId){
   const rel=DEPT_RELS.find(r=>r.id===relId);if(!rel)return;
   const now=new Date().toISOString();
@@ -1225,7 +1258,7 @@ function renderDeptList(){
     '<td class="tdm" style="text-align:right">'+(r.received?r.received_qty+' '+r.unit:'-')+'</td>'+
     '<td>'+(r.received?'<span class="badge bsrc">Received</span>':'<span class="badge bsr">Pending</span>')+'</td>'+
     '<td style="font-size:11px;color:var(--ink3);font-style:italic">'+(r.notes||'-')+'</td>'+
-    '<td>'+(r.received?'<span style="font-size:11px;color:var(--gr2)">done</span>':'<button class="stb sbr" style="font-size:10px;padding:3px 8px" onclick="markRcv(\''+r.relId+'\',\''+r.itemId+'\')">Mark Received</button>')+'</td>'+
+    '<td>'+(r.received?'<span style="font-size:11px;color:var(--gr2)">done</span>':'<button class="stb sb'+(!item.received?'<button class="btn bgh bxs" style="font-size:10px;padding:2px 6px;margin-right:3px" onclick="editDeptItem(\''+rec.id+'\',\''+item.id+'\')" title="Edit">✏️</button>':'')+'<button="font-size:10px;padding:3px 8px" onclick="markRcv(\''+r.relId+'\',\''+r.itemId+'\')">Mark Received</button>')+'</td>'+
     '</tr>'
   ).join(''):'<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--ink3)">No items for this selection</td></tr>';
 }
@@ -1234,9 +1267,45 @@ function renderDeptList(){
 let drForDept=null;
 function openDr(){drForDept=null;renderCatalogChecklist();document.getElementById('drModal').classList.add('open');}
 function openDrForDept(dept){drForDept=dept;document.getElementById('drDept').value=dept;renderCatalogChecklist();document.getElementById('drModal').classList.add('open');}
-function closeDr(){document.getElementById('drModal').classList.remove('open');drForDept=null;}
+let _customItems=[];
+
+function addCustomItem(){
+  const name=document.getElementById('customItemName').value.trim();
+  const qty=parseFloat(document.getElementById('customItemQty').value)||1;
+  const unit=(document.getElementById('customItemUnit').value.trim().toUpperCase())||'PCS';
+  if(!name){toast('Enter item name','err');return;}
+  _customItems.push({name,qty,unit});
+  document.getElementById('customItemName').value='';
+  document.getElementById('customItemQty').value='';
+  document.getElementById('customItemUnit').value='';
+  renderCustomItems();
+}
+
+function removeCustomItem(i){_customItems.splice(i,1);renderCustomItems();}
+
+function renderCustomItems(){
+  const el=document.getElementById('customItemsList');if(!el)return;
+  if(!_customItems.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="display:flex;flex-direction:column;gap:4px">'+
+    _customItems.map((it,i)=>
+      '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--grl);border:1px solid var(--grm);border-radius:var(--rs);font-size:12px">'
+      +'<span style="flex:1;font-weight:600">'+it.name+'</span>'
+      +'<span style="color:var(--ink3);font-family:var(--fm)">'+it.qty+' '+it.unit+'</span>'
+      +'<button class="btn bo bxs" onclick="removeCustomItem('+i+')" style="padding:2px 7px">✕</button>'
+      +'</div>'
+    ).join('')+'</div>';
+}
+
+function closeDr(){
+  document.getElementById('drModal').classList.remove('open');
+  drForDept=null;_customItems=[];
+  const el=document.getElementById('customItemsList');
+  if(el)el.innerHTML='';
+}
 
 function renderCatalogChecklist(){
+  _customItems=[];
+  const el=document.getElementById('customItemsList');if(el)el.innerHTML='';
   const dept=document.getElementById('drDept').value;
   const m=parseInt(document.getElementById('drMo').value)||new Date().getMonth()+1;
   const y=parseInt(document.getElementById('drYr').value)||2026;
@@ -1282,6 +1351,10 @@ async function saveDeptReq(){
       const qty=parseFloat(qtyEl.value)||1;
       items.push({id:uid(),name:cat.name,qty,unit:cat.unit,notes:notesEl.value.trim(),received:false,received_qty:0,received_at:null});
     }
+  });
+  // Add custom items
+  _customItems.forEach(it=>{
+    items.push({id:uid(),name:it.name,qty:it.qty,unit:it.unit,notes:'',received:false,received_qty:0,received_at:null});
   });
   if(!items.length){toast('Select at least one item','err');return;}
   const existIdx=DEPT_RELS.findIndex(r=>r.month===month&&r.year===year&&r.department===dept);
