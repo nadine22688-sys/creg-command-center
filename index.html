@@ -515,27 +515,32 @@ footer{position:relative;z-index:1;text-align:center;padding:16px 24px;font-size
       </div>
     </div>
 
-    <!-- 11: Training Tracker — Coming Soon -->
-    <div class="module-card uc-card" data-name="Training Tracker" style="background:var(--uc-bg);border:1px dashed var(--uc-bd);">
-      <div class="card-top-bar" style="background:repeating-linear-gradient(45deg,#ca8a04 0,#ca8a04 6px,transparent 6px,transparent 12px);opacity:0.4;"></div>
+    <!-- 11: Training Tracker -->
+    <a class="module-card" href="CREG_Training_Tracker.html" target="_blank"
+       data-name="Training Tracker"
+       onclick="trackOpen('Training Tracker','CREG_Training_Tracker.html')"
+       style="border-color:rgba(202,138,4,0.2);cursor:pointer;">
+      <div class="card-top-bar" style="background:linear-gradient(90deg,#ca8a04,#f59e0b);"></div>
       <div class="card-body">
         <div class="card-header">
-          <div class="card-icon" style="background:rgba(202,138,4,0.1);color:#ca8a04;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
-          <span style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(202,138,4,0.1);color:#ca8a04;border:1px solid rgba(202,138,4,0.25);">Coming Soon</span>
+          <div class="card-icon" style="background:rgba(202,138,4,0.12);color:#ca8a04;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+          <div class="card-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
         </div>
-        <div class="card-title" style="color:var(--uc-text);">Training Tracker</div>
-        <div class="card-desc" style="color:var(--uc-sub);">Track staff training attendance, seminar completions, certifications, and continuing education requirements.</div>
+        <div class="card-title">Training Tracker</div>
+        <div class="card-desc">Track staff training attendance, seminar completions, certifications, and continuing education requirements.</div>
         <div class="card-tags">
           <span class="tag" style="color:#ca8a04;border-color:rgba(202,138,4,0.28);background:rgba(202,138,4,0.07);">Seminars</span>
           <span class="tag" style="color:#ca8a04;border-color:rgba(202,138,4,0.28);background:rgba(202,138,4,0.07);">Training</span>
           <span class="tag" style="color:#ca8a04;border-color:rgba(202,138,4,0.28);background:rgba(202,138,4,0.07);">Certs</span>
         </div>
         <div class="card-footer" style="margin-top:auto;">
-          <div class="card-status"><svg viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2" style="width:12px;height:12px;flex-shrink:0;"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg><span style="font-size:10px;color:#ca8a04;font-weight:500;">Under Construction</span></div>
-          <div class="card-version" style="color:#ca8a04;">—</div>
+          <div class="card-status"><div class="status-dot" style="background:#ca8a04;"></div><span class="launch-label">Open Tracker</span></div>
+          <div>
+            <div class="card-updated" id="upd-training"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Not yet opened</span></div>
+          </div>
         </div>
       </div>
-    </div>
+    </a>
 
   </div><!-- /hr grid -->
 </main>
@@ -610,6 +615,7 @@ const UPDATED_MAP = {
   'DTR Tracker':'upd-dtr',
   'Financial Planner':'upd-fin',
   'HR Hub':'upd-hr',
+  'Training Tracker':'upd-training',
   'PSS Scorecard':'upd-scorecard',
   'Quick Reference':'upd-qr'
 };
