@@ -1130,12 +1130,17 @@ function buildKPIs(){
   }
   const medDisplay=medVal?mf(medVal):'—';
   // YoY badge for median (lower is better → invert badge colour)
+  // Compare the SAME period in both years: if a specific month is selected,
+  // compare that month's 2026 median vs that month's 2025 median (not YTD).
   let medBadge='';
-  if(yr===2026&&year!==0&&D.teamMed25&&D.teamMed26){
-    const pct26=D.teamMed26,pct25=D.teamMed25;
-    const chg=(pct26-pct25)/pct25*100;
-    // For Tx Time: improvement = decrease → green when negative
-    medBadge=`<span class="yoy ${chg<=0?'up':'dn'}">${chg<=0?'▼':'▲'}${Math.abs(chg).toFixed(1)}%</span>`;
+  if(yr===2026&&year!==0){
+    const med26=getTeamMed(2026,dm);
+    const med25=getTeamMed(2025,dm);
+    if(med25&&med26){
+      const chg=(med26-med25)/med25*100;
+      // For Tx Time: improvement = decrease → green (up class) when negative
+      medBadge=`<span class="yoy ${chg<=0?'up':'dn'}">${chg<=0?'▼':'▲'}${Math.abs(chg).toFixed(1)}%</span>`;
+    }
   }
 
   const lbl=year===0?'YoY Mode':(dm==='YTD'?`Year to Date — ${yr}`:`${dm} ${yr}`);
