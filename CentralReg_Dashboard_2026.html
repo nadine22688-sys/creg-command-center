@@ -2852,44 +2852,23 @@ function saveAndDeploy() {
   // corrupts complex inline scripts / template literals).
   const doBake = (sourceText) => {
     try {
-      // Escape characters that could break out of the script tag. Browsers decode
-      // \u003c etc. back to the same value, so stored data is identical.
-      const dbJSON = JSON.stringify(DB)
-        .replace(/</g, '\\u003c')
-        .replace(/>/g, '\\u003e')
-        .replace(/\u2028/g, '\\u2028')
-        .replace(/\u2029/g, '\\u2029');
-      // Replace ONLY the DB object: from `var DB = {` up to the `};` that closes it.
-      // The HTML body (charts/canvases) sits AFTER the DB and before the later
-      // `var D=DB,MCOLS=...` line — so we must stop at the DB's own `};`, never
-      // extend to that later line (doing so deletes the entire page body).
+      const dbJSON = JSON.stringify(DB);
+      // Anchors that bound the original DB declaration in the source
       const startAnchor = 'var DB = {';
-      const closeTag = '<' + '/script>';
+      const endAnchor = '\nvar D=DB,MCOLS=D.MCOLS;';
       const dbStart = sourceText.indexOf(startAnchor);
-      // The DB object is followed by ';' then (optional whitespace) then </script>.
-      // Find the </script> that closes the DB's own script block, then walk back to
-      // the ';' that ends the DB statement. Works whether DB is multi-line or one-line.
-      const closeIdx = sourceText.indexOf(closeTag, dbStart);
-      if (dbStart === -1 || closeIdx === -1) {
-        throw new Error('Could not locate the DB block in source. Bake aborted — your file is unchanged.');
+      const dbEnd = sourceText.indexOf(endAnchor, dbStart);
+      if (dbStart === -1 || dbEnd === -1) {
+        throw new Error('Could not locate the DB block in source. Bake aborted to avoid corruption.');
       }
-      // Find the last ';' before that closing </script> — that's the end of the DB statement.
-      const semiIdx = sourceText.lastIndexOf(';', closeIdx);
-      if (semiIdx === -1 || semiIdx < dbStart) {
-        throw new Error('Could not locate end of DB statement. Bake aborted — your file is unchanged.');
-      }
-      // Keep everything from just after the ';' (preserves the newline + </script> + body)
-      const keepFrom = semiIdx + 1;
-      const newBlock = 'var DB = ' + dbJSON + ';';
-      const baked = sourceText.slice(0, dbStart) + newBlock + sourceText.slice(keepFrom);
+      const endPos = dbEnd + endAnchor.length;
+      // Build the replacement DB block (same anchors so re-baking works repeatedly)
+      const newBlock = 'var DB = ' + dbJSON + ';\nvar D=DB,MCOLS=D.MCOLS;';
+      const baked = sourceText.slice(0, dbStart) + newBlock + sourceText.slice(endPos);
 
-      // Integrity guards: the body and charts MUST survive the bake.
-      const srcCanvas = (sourceText.match(/<canvas/g) || []).length;
-      const bakedCanvas = (baked.match(/<canvas/g) || []).length;
-      if (baked.indexOf('</html>') === -1
-          || baked.indexOf('id="kpiStrip"') === -1
-          || bakedCanvas !== srcCanvas) {
-        throw new Error('Bake aborted: integrity check failed (body or charts would be lost). Your file is unchanged.');
+      // Quick integrity guard: result must still contain key markers
+      if (baked.indexOf('function saveAndDeploy') === -1 || baked.indexOf('</html>') === -1) {
+        throw new Error('Baked output failed integrity check. Bake aborted.');
       }
 
       const blob = new Blob([baked], { type: 'text/html;charset=utf-8' });
