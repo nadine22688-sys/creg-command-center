@@ -587,6 +587,7 @@ var DB = {
       ⬆ Upload Masterfile
     </button>
     <button class="theme-btn" onclick="resetToBuiltIn()" title="Clear all saved/cached data and reload fresh" style="background:#fde8e8;border-color:#f5b5b5;color:#c0392b">↺ Reset Data</button>
+    <button class="theme-btn" onclick="saveAndDeploy()" title="Bake the currently-loaded data into a downloadable file you can share or upload to GitHub" style="background:#e6f4ea;border-color:#a9d8b8;color:#1e7e34">💾 Bake &amp; Download</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ Light</button>
     <div class="vtog">
       <button class="vb on" onclick="setView('ops')">⚙ Ops</button>
@@ -2980,39 +2981,102 @@ function applyUploadedDB(){
    Triggered by: Ctrl+S
 ══════════════════════════════════════════════ */
 function saveAndDeploy() {
-  try {
-    // Get current HTML
-    let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  // Reliable bake: fetch THIS page's own pristine source text, then surgically
+  // replace only the `var DB = {...}` block with current data. We never use
+  // document.documentElement.outerHTML (that captures the rendered DOM and
+  // corrupts complex inline scripts / template literals).
+  const doBake = (sourceText) => {
+    try {
+      const dbJSON = JSON.stringify(DB);
+      // Anchors that bound the original DB declaration in the source
+      const startAnchor = 'var DB = {';
+      const endAnchor = '\nvar D=DB,MCOLS=D.MCOLS;';
+      const dbStart = sourceText.indexOf(startAnchor);
+      const dbEnd = sourceText.indexOf(endAnchor, dbStart);
+      if (dbStart === -1 || dbEnd === -1) {
+        throw new Error('Could not locate the DB block in source. Bake aborted to avoid corruption.');
+      }
+      const endPos = dbEnd + endAnchor.length;
+      // Build the replacement DB block (same anchors so re-baking works repeatedly)
+      const newBlock = 'var DB = ' + dbJSON + ';\nvar D=DB,MCOLS=D.MCOLS;';
+      const baked = sourceText.slice(0, dbStart) + newBlock + sourceText.slice(endPos);
 
-    // Bake the current DB data directly into the HTML
-    // Inject AFTER var DB = {...} declaration so it overwrites immediately
-    const dbJSON = JSON.stringify(DB);
-    const bakedScript = '<script>/* BAKED DATA */\nvar DB=' + dbJSON + ';\nvar D=DB,MCOLS=D.MCOLS;<\/script>';
+      // Quick integrity guard: result must still contain key markers
+      if (baked.indexOf('function saveAndDeploy') === -1 || baked.indexOf('</html>') === -1) {
+        throw new Error('Baked output failed integrity check. Bake aborted.');
+      }
 
-    // Replace the original var DB declaration with baked data
-    const dbStart = html.indexOf('var DB = {');
-    const dbEnd = html.indexOf('\nvar D=DB,MCOLS=D.MCOLS;', dbStart) + '\nvar D=DB,MCOLS=D.MCOLS;'.length;
-    if(dbStart > -1 && dbEnd > dbStart) {
-      html = html.slice(0, dbStart) + bakedScript + html.slice(dbEnd);
+      const blob = new Blob([baked], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'CentralReg_Dashboard_2026.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e7e34;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+      toast.textContent = '\u2705 Baked & downloaded — data is now inside the file (safe to share).';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4500);
+    } catch (err) {
+      alert('Bake error: ' + err.message);
     }
+  };
 
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'CentralReg_Dashboard_2026.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    const toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0a9396;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
-    toast.textContent = '✅ Saved as CentralReg_Dashboard_2026.html — ready to upload to GitHub!';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-  } catch(err) {
-    alert('Export error: ' + err.message);
-  }
+  // Try to read our own source. Strategy:
+  //  1) fetch() — works on http(s) always
+  //  2) XMLHttpRequest — works on file:// in many browsers where fetch is blocked
+  //  3) JSON export fallback — always works, user sends to Claude to bake
+  const selfUrl = window.location.href.split('#')[0].split('?')[0];
+
+  const tryXHR = () => new Promise((resolve, reject) => {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', selfUrl, true);
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === 4) {
+          // file:// returns status 0 on success
+          if ((xhr.status === 200 || xhr.status === 0) && xhr.responseText && xhr.responseText.indexOf('var DB = {') !== -1) {
+            resolve(xhr.responseText);
+          } else {
+            reject(new Error('XHR could not read source (status ' + xhr.status + ')'));
+          }
+        }
+      };
+      xhr.onerror = () => reject(new Error('XHR network error'));
+      xhr.send();
+    } catch (e) { reject(e); }
+  });
+
+  fetch(selfUrl)
+    .then(r => { if (!r.ok) throw new Error('fetch status ' + r.status); return r.text(); })
+    .then(text => {
+      if (!text || text.indexOf('var DB = {') === -1) throw new Error('source missing DB anchor');
+      doBake(text);
+    })
+    .catch(() => {
+      // fetch failed (likely file://) — try XMLHttpRequest before giving up
+      tryXHR()
+        .then(text => doBake(text))
+        .catch(err => {
+          const msg = 'Could not read the page source automatically while opening via file://.\n\n'
+            + 'Most reliable fix: open the dashboard from your GitHub Pages URL, then click Bake & Download (or Ctrl+S).\n\n'
+            + 'For now, a data file (CREG_dashboard_data_June.json) will download — send that to Claude and it will bake the dashboard for you.\n\n'
+            + 'Technical detail: ' + err.message;
+          alert(msg);
+          try {
+            const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'CREG_dashboard_data_June.json';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          } catch(e) {}
+        });
+    });
 }
 
 // Ctrl+S shortcut
