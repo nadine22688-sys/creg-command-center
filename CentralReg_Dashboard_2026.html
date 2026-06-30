@@ -2992,7 +2992,18 @@ function saveAndDeploy() {
   // corrupts complex inline scripts / template literals).
   const doBake = (sourceText) => {
     try {
-      const dbJSON = JSON.stringify(DB);
+      // Guard: source must be non-empty and contain the DB anchor
+      if (!sourceText || sourceText.length < 1000 || sourceText.indexOf('var DB = {') === -1) {
+        throw new Error('Source could not be read correctly (empty or missing data block). Bake aborted — your file is unchanged.');
+      }
+      // Escape characters that could break out of the <script> tag.
+      // Browsers decode \u003c etc. back to the same value when parsing the JS string,
+      // so the stored data is identical — it just can't prematurely close the tag.
+      const dbJSON = JSON.stringify(DB)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029');
       // Anchors that bound the original DB declaration in the source
       const startAnchor = 'var DB = {';
       const endAnchor = '\nvar D=DB,MCOLS=D.MCOLS;';
@@ -3006,9 +3017,14 @@ function saveAndDeploy() {
       const newBlock = 'var DB = ' + dbJSON + ';\nvar D=DB,MCOLS=D.MCOLS;';
       const baked = sourceText.slice(0, dbStart) + newBlock + sourceText.slice(endPos);
 
-      // Quick integrity guard: result must still contain key markers
+      // Integrity guards: result must still contain key markers AND not have broken script tags
       if (baked.indexOf('function saveAndDeploy') === -1 || baked.indexOf('</html>') === -1) {
         throw new Error('Baked output failed integrity check. Bake aborted.');
+      }
+      // Verify the data block itself doesn't contain a raw </script that would blank the page
+      const dataBlock = baked.slice(dbStart, dbStart + newBlock.length);
+      if (/<\/script/i.test(dataBlock)) {
+        throw new Error('Data contains a script-closing sequence even after escaping. Bake aborted to prevent a blank file.');
       }
 
       const blob = new Blob([baked], { type: 'text/html;charset=utf-8' });
