@@ -529,7 +529,7 @@ function checkOpsGate() {
     <p>CENTRAL REGISTRATION &middot; MAKATI MEDICAL CENTER</p>
   </div>
   <div class="topbar-right">
-    <div class="topbar-badge">v11.23 &middot; 2026</div>
+    <div class="topbar-badge">v11.24 &middot; 2026</div>
     <div class="upload-btn" title="Upload new masterfile to refresh all data">
       <input type="file" id="masterfileInput" accept=".xlsx" onchange="handleMasterfileUpload(this.files[0])">
       &#8635; Upload Masterfile
@@ -1302,15 +1302,61 @@ async function loadNewMasterfile(file) {
       (Number(a.MONTH_NUM||0)-Number(b.MONTH_NUM||0))||
       (Number(a.WEEK_NUM||0)-Number(b.WEEK_NUM||0))
     );
+    // v11.24: Recover each WEEKLY row's true Mon–Sat calendar window from its
+    // DAILY dates. WEEK_NUM alone is unreliable across month boundaries: a week
+    // that spans two months (e.g. Jun 29 – Jul 4) is stored as TWO partial rows,
+    // so "the previous row" is often only HALF of the previous real week.
+    // Dates are unambiguous; every comparison below is therefore date-driven.
+    function _wkMonday(r){
+      const sel = (DB.daily||[]).filter(d =>
+        Number(d.YEAR)===Number(r.YEAR) &&
+        Number(d.MONTH_NUM)===Number(r.MONTH_NUM) &&
+        Number(d.WEEK_NUM)===Number(r.WEEK_NUM) && d.DATE);
+      if (!sel.length) return null;
+      const first = sel.map(d=>_wbDateStr(d.DATE)).sort()[0];
+      const jd = _wbDowUTC(first);
+      return _wbAddDays(first, (jd===0) ? -6 : (1-jd));   // Monday of that ISO week
+    }
+    // Sum DAILY patient counts across an inclusive date window.
+    function _sumDaily(from, to){
+      return (DB.daily||[])
+        .filter(d => { const ds=_wbDateStr(d.DATE); return ds>=from && ds<=to; })
+        .reduce((s,d) => s + (Number(d.PAT_COUNT)||0), 0);
+    }
+
     DB.w.forEach((r, i) => {
-      // PREV_PATIENTS
-      if (i > 0) r.PREV_PATIENTS = DB.w[i-1].PATIENTS;
-      // YOY_PAT
-      const yoy = DB.w.find(x =>
-        Number(x.YEAR) === Number(r.YEAR)-1 &&
-        Number(x.MONTH_NUM) === Number(r.MONTH_NUM) &&
-        Number(x.WEEK_NUM) === Number(r.WEEK_NUM));
-      if (yoy) r.YOY_PAT = yoy.PATIENTS;
+      const _mon = _wkMonday(r);
+      // ── PREV_PATIENTS ─────────────────────────────────────────────────────
+      // v11.24 FIX: previously took DB.w[i-1].PATIENTS — the previous ROW, not
+      // the previous WEEK. After a bridge week that row is a month-partial, so
+      // the Brief compared against a 4-day fragment (e.g. Jul 6–11 vs the Jul 1–4
+      // partial = a false +37.6%, when the true week-over-week was −8.3%).
+      // Now: sum the actual preceding Mon–Sat window. Falls back to the old
+      // row-index rule when DAILY has no coverage (older weeks), so nothing regresses.
+      let _prevSet = false;
+      if (_mon) {
+        const _pv = _sumDaily(_wbAddDays(_mon,-7), _wbAddDays(_mon,-2));
+        if (_pv > 0) { r.PREV_PATIENTS = _pv; _prevSet = true; }
+      }
+      if (!_prevSet && i > 0) r.PREV_PATIENTS = DB.w[i-1].PATIENTS;
+
+      // ── YOY_PAT ───────────────────────────────────────────────────────────
+      // v11.24: same hardening — the same week last year by DATE (~52 weeks back),
+      // immune to bridge weeks and to any WEEK_NUM scheme drift between years.
+      // Falls back to the YEAR-1 / MONTH_NUM / WEEK_NUM row match if DAILY is thin.
+      let _yoySet = false;
+      if (_mon) {
+        const _lm = _wbAddDays(_mon,-364);
+        const _yv = _sumDaily(_lm, _wbAddDays(_lm,5));
+        if (_yv > 0) { r.YOY_PAT = _yv; _yoySet = true; }
+      }
+      if (!_yoySet) {
+        const yoy = DB.w.find(x =>
+          Number(x.YEAR) === Number(r.YEAR)-1 &&
+          Number(x.MONTH_NUM) === Number(r.MONTH_NUM) &&
+          Number(x.WEEK_NUM) === Number(r.WEEK_NUM));
+        if (yoy) r.YOY_PAT = yoy.PATIENTS;
+      }
       // EMAIL_WK from EXPORT
       const expRow = DB.e.find(e => Number(e.YEAR)===Number(r.YEAR) && e.MONTH===r.MONTH);
       if (expRow && expRow.TOTAL_TX && r.TOTAL_TX)
