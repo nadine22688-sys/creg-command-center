@@ -2713,6 +2713,16 @@ function buildOffMap(year,month,days,allReqs,prior,schedRot){
     offMap[dk].add('CARINGAL');
     weeklyOff['CARINGAL'][dk]='sat';
   });
+  // TL PRIORITY: also honor the Team Lead's EXPLICIT Saturday ROFF requests
+  // (any Saturday she files — not just the fixed 1st & 3rd). Rotation staff get
+  // this via the pass below; the TL was previously excluded. This guarantees her
+  // filed rest-day requests, consistent with TL request priority.
+  mROFFs.filter(r=>r.staffKey===TL_KEY&&monthSatDks.includes(r.date)&&!tlSatSet.has(r.date))
+    .forEach(r=>{
+      tlSatSet.add(r.date);
+      offMap[r.date].add(TL_KEY);
+      weeklyOff[TL_KEY][r.date]='sat';
+    });
 
   // ── ROTATION SAT ROFF ───────────────────────────────────────────────────
   // Available rotation slots per sat (TL-sat: 1 slot, non-TL-sat: 2 slots)
@@ -3201,17 +3211,29 @@ function buildSchedEngine(year,month,allReqs,prevPub,fullStaffRoster,curPub){
       if(!r.staffKey)return false;
       const d=new Date(r.date+'T00:00:00');
       return r.date===dk;
-    }).sort((a,b)=>(prior[a.staffKey]||0)-(prior[b.staffKey]||0));
+    }).sort((a,b)=>{
+      // TL PRIORITY: Team Lead (Nadine) requests are always processed first,
+      // so she claims her slot before any contention. Others fall back to fairness.
+      const aTL=a.staffKey==='CARINGAL',bTL=b.staffKey==='CARINGAL';
+      if(aTL&&!bTL)return -1;
+      if(bTL&&!aTL)return 1;
+      return (prior[a.staffKey]||0)-(prior[b.staffKey]||0);
+    });
 
     for(const req of dayReqs){
       const k=req.staffKey;
       if(!LEAVE_TYPES.includes(req.type))continue;
       if(leaveAbsent.has(k)){s[k]=req.type;continue;}
       // Max 2 away per day: VL and BDL count (not SL/EL)
+      // TL PRIORITY: the Team Lead (Nadine) does NOT consume a rotation leave slot
+      // (her absence uses the separate TL slot), so up to 2 rotation staff can still
+      // have leave alongside her.
       const awayCount=[...leaveAbsent].filter(k=>{
+        if(k==='CARINGAL')return false;
         const v=s[k];return v&&AWAY_COUNT_TYPES.includes(v);
       }).length;
-      if(awayCount>=2&&AWAY_COUNT_TYPES.includes(req.type)){logs.push({date:dk,staffKey:k,type:req.type,reason:'Max 2 leave absences',status:'denied'});continue;}
+      // TL PRIORITY: Nadine is never denied by the daily leave cap — her request is guaranteed.
+      if(k!=='CARINGAL'&&awayCount>=2&&AWAY_COUNT_TYPES.includes(req.type)){logs.push({date:dk,staffKey:k,type:req.type,reason:'Max 2 leave absences',status:'denied'});continue;}
       if((k==='ANZURES'&&leaveAbsent.has('BASILIO'))||(k==='BASILIO'&&leaveAbsent.has('ANZURES'))){
         logs.push({date:dk,staffKey:k,type:req.type,reason:'Anzures/Basilio conflict',status:'denied'});continue;
       }
