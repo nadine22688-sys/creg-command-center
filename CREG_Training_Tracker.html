@@ -490,7 +490,7 @@ tbody tr:hover { background: #FAFAF9; }
       </div>
     </div>
     <div class="topbar-right no-print">
-      <button class="btn btn-primary btn-sm" onclick="openModal('addRecordModal')"><i class="ti ti-plus"></i> Add Record</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddRecord()"><i class="ti ti-plus"></i> Add Record</button>
     </div>
   </div>
 
@@ -1417,6 +1417,8 @@ function openAddRecord(empId) {
   document.getElementById('rec-date-completed').value = '';
   document.getElementById('rec-next-due').value = '';
   document.getElementById('rec-comments').value = '';
+  // Reset next due field visibility based on first course in list
+  onCourseSelect();
   openModal('addRecordModal');
 }
 
