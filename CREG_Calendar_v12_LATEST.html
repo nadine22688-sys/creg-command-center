@@ -2377,7 +2377,7 @@ const SCHED_STAFF=[
   {key:'PAHILA',   full:'PAHILA, IAN TIMOTHY',     nick:'Pahila, Ian',      id:'005417',hrName:'PAHILA IAN TIMOTHY CELSO',           wdShift:'8AM-5PM',satShift:'7AM-4PM',fixedBreak:null,   isTL:false},
   {key:'PASAY',    full:'PASAY, GLADIZE',           nick:'Pasay, Gladize',   id:'002290',hrName:'PASAY GLADIZE GRACE LAURETA',        wdShift:'7AM-4PM',satShift:'7AM-4PM',fixedBreak:'12NN', isTL:false},
   {key:'SOLIS',    full:'SOLIS, MARY',              nick:'Solis, Mary',      id:'001937',hrName:'SOLIS MARY AILEEN TOBIAS',           wdShift:'8AM-5PM',satShift:'7AM-4PM',fixedBreak:'10AM', isTL:false},
-  {key:'TAGUIAM',  full:'TAGUIAM, JOHN ADRIAN',     nick:'Taguiam, John',    id:'004587',hrName:'TAGUIAM JOHN ADRIAN MALICSE',        wdShift:'9AM-5PM',satShift:'8AM-4PM',fixedBreak:'12NN', isTL:false},
+  {key:'TAGUIAM',  full:'TAGUIAM, JOHN ADRIAN',     nick:'Taguiam, John',    id:'004587',hrName:'TAGUIAM JOHN ADRIAN MALICSE',        wdShift:'8AM-5PM',satShift:'7AM-4PM',fixedBreak:'12NN', isTL:false},
   {key:'VILLAREAL',full:'VILLAREAL, HANS',          nick:'Villareal, Hans',  id:'011162',hrName:'VILLAREAL HANS CHRISTIAN SALEGUMBA', wdShift:'8AM-5PM',satShift:'7AM-4PM',fixedBreak:null,   isTL:false},
   {key:'CARINGAL', full:'CARINGAL, NADINE',         nick:'Caringal, Nadine', id:'002456',hrName:'CARINGAL NADINE ANDAL',              wdShift:'9AM-6PM',satShift:'9AM-6PM',fixedBreak:'1PM',  isTL:true },
 ];
@@ -3336,7 +3336,6 @@ function buildSchedEngine(year,month,allReqs,prevPub,fullStaffRoster,curPub){
 
     present.forEach(x=>{
       if(sdSat(day)){s[x.key]=x.satShift;return;}
-      if(x.key==='TAGUIAM'){s[x.key]='9AM-5PM';return;}
       if(x.key==='BASILIO'){s[x.key]='7AM-4PM';return;}
       if(x.key==='PASAY'){s[x.key]='7AM-4PM';return;}
       if(x.key==='CALICA'){
