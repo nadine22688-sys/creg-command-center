@@ -559,6 +559,10 @@ tr:nth-child(even) td{background:var(--surface2)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       Calendar
     </button>
+    <button class="tab" onclick="switchTab('mysched')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      My Schedule
+    </button>
     <button class="tab" onclick="switchTab('mon')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Monitoring
@@ -609,6 +613,102 @@ tr:nth-child(even) td{background:var(--surface2)}
       <div class="cg" id="cg"></div>
     </div>
     <div class="list-view" id="list-view"></div>
+  </div>
+
+  <!-- MY SCHEDULE PANE -->
+  <div class="pane" id="pane-mysched">
+    <style>
+      #pane-mysched .mys-controls{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:12px;margin-bottom:14px}
+      #pane-mysched .mys-row1{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+      #pane-mysched .mys-row1 select,#pane-mysched .mys-who select{font-family:inherit;font-size:14px;font-weight:600;color:var(--navy);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;background:#fff;cursor:pointer}
+      #pane-mysched .mys-row1 #mys-month-sel{flex:1;min-width:130px}
+      #pane-mysched .mys-toggle{display:flex;background:var(--surface3);border-radius:9px;padding:3px}
+      #pane-mysched .mys-tg{border:none;background:transparent;font-family:inherit;font-size:12px;font-weight:600;color:var(--text2);padding:6px 14px;border-radius:7px;cursor:pointer}
+      #pane-mysched .mys-tg.on{background:var(--navy);color:#fff}
+      #pane-mysched .mys-who{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:600;color:var(--text2)}
+      #pane-mysched .mys-who select{flex:1}
+      #pane-mysched .mys-hero{background:linear-gradient(135deg,#1A3A5C,#2A5480);color:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+      #pane-mysched .mys-hero-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+      #pane-mysched .mys-av{width:44px;height:44px;border-radius:50%;background:#FCD34D;color:#78350F;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      #pane-mysched .mys-nm{font-size:16px;font-weight:700}
+      #pane-mysched .mys-rl{font-size:12px;color:rgba(255,255,255,.75);margin-top:2px}
+      #pane-mysched .mys-hgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      #pane-mysched .mys-hc{background:rgba(255,255,255,.1);border-radius:10px;padding:10px 12px}
+      #pane-mysched .mys-hc .k{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.65);font-weight:600}
+      #pane-mysched .mys-hc .v{font-size:15px;font-weight:700;margin-top:3px}
+      #pane-mysched .mys-hc .v small{font-weight:500;font-size:12px;color:rgba(255,255,255,.8)}
+      #pane-mysched .mys-tally{display:flex;gap:8px;margin-bottom:12px}
+      #pane-mysched .mys-tally .t{flex:1;background:var(--surface);border-radius:12px;box-shadow:var(--shadow);padding:11px 6px;text-align:center}
+      #pane-mysched .mys-tally .t .n{font-size:20px;font-weight:700;color:var(--navy);font-family:'DM Mono',monospace}
+      #pane-mysched .mys-tally .t .l{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.03em;margin-top:2px;font-weight:600}
+      #pane-mysched .mys-sec{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:18px 4px 8px}
+      #pane-mysched .mys-agenda{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden}
+      #pane-mysched .mys-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border)}
+      #pane-mysched .mys-row:last-child{border-bottom:none}
+      #pane-mysched .mys-row.today{background:#EBF3FF}
+      #pane-mysched .mys-date{width:40px;text-align:center;flex-shrink:0}
+      #pane-mysched .mys-date .dow{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase}
+      #pane-mysched .mys-date .num{font-size:19px;font-weight:700;color:var(--navy);line-height:1}
+      #pane-mysched .mys-row.today .num{color:var(--accent)}
+      #pane-mysched .mys-rmid{flex:1;min-width:0}
+      #pane-mysched .mys-chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
+      #pane-mysched .mys-chip.shift{background:#DBEAFE;color:#1E3A8A}
+      #pane-mysched .mys-chip.roff{background:#FEF3C7;color:#92400E}
+      #pane-mysched .mys-chip.vl{background:#D1FAE5;color:#065F46}
+      #pane-mysched .mys-chip.sl{background:#FFE4E6;color:#BE123C}
+      #pane-mysched .mys-chip.off{background:#F1F5F9;color:#64748B}
+      #pane-mysched .mys-chip.hol{background:#EDE9FE;color:#5B21B6}
+      #pane-mysched .mys-today{font-size:9px;font-weight:700;color:var(--accent);background:#dbeafe;padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:middle}
+      #pane-mysched .mys-meta{font-size:12px;color:var(--text2);margin-top:5px;display:flex;gap:12px;flex-wrap:wrap}
+      #pane-mysched .mys-meta b{color:var(--text);font-weight:600}
+      #pane-mysched .mys-team{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:14px}
+      #pane-mysched .mys-team-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+      #pane-mysched .mys-team-head .ttl{font-size:14px;font-weight:700;color:var(--navy)}
+      #pane-mysched .mys-staffing{font-size:12px;font-weight:700;color:#065F46;background:#D1FAE5;padding:4px 10px;border-radius:20px}
+      #pane-mysched .mys-staffing.warn{color:#92400E;background:#FEF3C7}
+      #pane-mysched .mys-tlabel{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px}
+      #pane-mysched .mys-pill{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px dashed var(--border)}
+      #pane-mysched .mys-pill:last-child{border-bottom:none}
+      #pane-mysched .mys-ini{width:29px;height:29px;border-radius:50%;background:#E2E8F0;color:var(--navy);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      #pane-mysched .mys-pill .pn{font-size:13px;font-weight:600;flex:1}
+      #pane-mysched .mys-pill .ps{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace}
+      #pane-mysched .mys-pill .ps.tag{font-weight:700}
+      #pane-mysched .mys-none{font-size:12px;color:var(--text3);padding:4px 0}
+      #pane-mysched .mys-cal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow);margin-bottom:12px}
+      #pane-mysched .mys-gh{display:grid;grid-template-columns:repeat(7,1fr);background:var(--navy)}
+      #pane-mysched .mys-gh div{text-align:center;font-size:10px;font-weight:700;color:rgba(255,255,255,.7);padding:8px 2px;text-transform:uppercase}
+      #pane-mysched .mys-gh div:first-child{color:#FCA5A5}
+      #pane-mysched .mys-cg{display:grid;grid-template-columns:repeat(7,1fr)}
+      #pane-mysched .mys-cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-height:64px;padding:4px 3px;display:flex;flex-direction:column;align-items:center;gap:3px}
+      #pane-mysched .mys-cell:nth-child(7n){border-right:none}
+      #pane-mysched .mys-cell.pad{background:#FAFBFC}
+      #pane-mysched .mys-cell .dn{font-size:11px;font-weight:700;color:var(--text2);align-self:flex-start;margin-left:2px}
+      #pane-mysched .mys-cell.today{background:#EBF3FF}
+      #pane-mysched .mys-cell.today .dn{color:var(--accent)}
+      #pane-mysched .mys-gpill{font-size:10px;font-weight:700;padding:2px 0;border-radius:6px;width:100%;text-align:center;line-height:1.1}
+      #pane-mysched .mys-gpill.shift{background:#DBEAFE;color:#1E3A8A}
+      #pane-mysched .mys-gpill.roff{background:#FEF3C7;color:#92400E}
+      #pane-mysched .mys-gpill.vl{background:#D1FAE5;color:#065F46}
+      #pane-mysched .mys-gpill.sl{background:#FFE4E6;color:#BE123C}
+      #pane-mysched .mys-gpill.off{background:#F1F5F9;color:#64748B}
+      #pane-mysched .mys-gpill.hol{background:#EDE9FE;color:#5B21B6}
+      #pane-mysched .mys-gbrk{font-size:8.5px;color:var(--text3);font-family:'DM Mono',monospace;line-height:1}
+      #pane-mysched .mys-legend{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;padding:10px;background:var(--surface);border-radius:12px;box-shadow:var(--shadow)}
+      #pane-mysched .mys-legend .li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+      #pane-mysched .mys-legend .dot{width:11px;height:11px;border-radius:3px}
+      #pane-mysched .mys-empty{text-align:center;color:var(--text3);font-size:14px;padding:50px 20px;line-height:2}
+    </style>
+    <div class="mys-controls">
+      <div class="mys-row1">
+        <select id="mys-month-sel" onchange="mysChangeMonth()"></select>
+        <div class="mys-toggle">
+          <button id="mys-tab-agenda" class="mys-tg on" onclick="mysSetView('agenda')">Agenda</button>
+          <button id="mys-tab-grid" class="mys-tg" onclick="mysSetView('grid')">Month</button>
+        </div>
+      </div>
+      <div class="mys-who"><span>👤 Viewing:</span><select id="mys-who-sel" onchange="mysChangeWho()"></select></div>
+    </div>
+    <div id="mys-content"></div>
   </div>
 
   <!-- SCHEDULE PANE -->
@@ -1865,6 +1965,7 @@ function switchTab(t){
   const pn=document.getElementById(`pane-${t}`);if(pn)pn.classList.add('on');
   if(t==='mon'){document.getElementById('mon-year').value=curY;renderMon();}
   if(t==='cal'){renderCal();}
+  if(t==='mysched'){renderMySched();}
   if(t==='admin'){renderAdminPanel();}
   if(t==='sched'){
     savePreviewToCache(genPreview);
@@ -3859,7 +3960,154 @@ function renderSchedView(){
   tabs.style.display='';renderSchedViewTable();
 }
 
-
+// ══════════════════════════════════════════════════════════════════════════
+// MY SCHEDULE — personal filtered view (agenda default + month grid toggle)
+// Read-only; pulls from published schedules (pubScheds).
+// ══════════════════════════════════════════════════════════════════════════
+let mysWho='',mysView=(()=>{try{return localStorage.getItem('creg_mys_view')||'agenda'}catch(e){return 'agenda'}})();
+const _MYS_DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const _MYS_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function _mysPad(n){return String(n).padStart(2,'0')}
+function _mysTodayDk(){const t=new Date();return `${t.getFullYear()}-${_mysPad(t.getMonth()+1)}-${_mysPad(t.getDate())}`}
+function _mysShort(v){return String(v).replace(/AM|PM/gi,'').replace('-','–')}
+function _mysIni(nick){const p=String(nick).replace(/,/g,'').split(/\s+/).filter(Boolean);return ((p[0]?.[0]||'')+(p[1]?.[0]||'')).toUpperCase()||'?'}
+function _mysDowDate(d){return `${_MYS_DOW[d.getUTCDay()]}, ${_MYS_MON[d.getUTCMonth()]} ${d.getUTCDate()}`}
+function _mysTask(t){const m={'COUNTER':'Counter','ONCALL':'On-Call','ON CALL':'On-Call','EMAIL':'Email','CONSENT':'Consent','RAD':'Radiology','RADIOLOGY':'Radiology','SHRED':'Shredding','SHREDDING':'Shredding'};return m[String(t).toUpperCase()]||t}
+function _mysCell(pub,dk,key){
+  const v=pub.sched?.[dk]?.[key];
+  if(v===''||v==null)return null;
+  const brk=pub.brkSched?.[dk]?.[key]||'';const task=pub.taskSched?.[dk]?.[key]||'';
+  if(!isAbsV(v))return {type:'shift',label:v,short:_mysShort(v),brk,task};
+  if(v==='ROFF')return {type:'roff',label:'Rest Day (ROFF)',short:'ROFF'};
+  if(v==='HOL')return {type:'hol',label:PH_HOL[dk]||'Holiday',short:'HOL'};
+  if(v==='VL')return {type:'vl',label:'Vacation Leave',short:'VL'};
+  if(v==='BDL')return {type:'vl',label:'Birthday Leave',short:'BDL'};
+  if(v==='SL')return {type:'sl',label:'Sick Leave',short:'SL'};
+  if(v==='EL')return {type:'sl',label:'Emergency Leave',short:'EL'};
+  return {type:'off',label:'Off',short:'OFF'};
+}
+function _mysMonthDays(pub,key){
+  const y=parseInt(key.slice(0,4)),m=parseInt(key.slice(5,7));
+  const raw=Array.isArray(pub.days)?pub.days:(typeof pub.days==='string'&&pub.days?pub.days.split(',').map(s=>s.trim()).filter(Boolean):[]);
+  return raw.map(ds=>new Date(ds+'T00:00:00Z')).filter(d=>d.getUTCFullYear()===y&&d.getUTCMonth()+1===m).sort((a,b)=>a-b);
+}
+function _mysTally(pub,days){let work=0,rest=0,leave=0;days.forEach(d=>{const c=_mysCell(pub,dsS(d),mysWho);if(!c)return;if(c.type==='shift')work++;else if(c.type==='roff')rest++;else if(c.type==='vl'||c.type==='sl')leave++;});return {work,rest,leave}}
+async function renderMySched(){
+  const pane=document.getElementById('pane-mysched');if(!pane)return;
+  if(!Object.keys(pubScheds).length){try{await loadPublishedSchedules();}catch(e){}}
+  const msel=document.getElementById('mys-month-sel');
+  const keys=Object.keys(pubScheds).filter(k=>/^\d{4}-\d{2}$/.test(k)).sort();
+  if(msel&&msel.dataset.count!==String(keys.length)){
+    msel.innerHTML='';
+    if(!keys.length){const o=document.createElement('option');o.value='';o.textContent='No published schedules yet';msel.appendChild(o);}
+    keys.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${MONTHS_S[parseInt(k.slice(5,7))-1]} ${k.slice(0,4)}`;msel.appendChild(o);});
+    msel.dataset.count=String(keys.length);
+    const curKey=_mysTodayDk().slice(0,7);
+    msel.value=pubScheds[curKey]?curKey:(keys[keys.length-1]||'');
+  }
+  _mysFillWho();_mysSyncToggle();_mysRenderView();
+}
+function _mysSyncToggle(){const a=document.getElementById('mys-tab-agenda'),g=document.getElementById('mys-tab-grid');if(a&&g){a.classList.toggle('on',mysView==='agenda');g.classList.toggle('on',mysView==='grid');}}
+function mysChangeMonth(){_mysFillWho();_mysRenderView();}
+function mysChangeWho(){const s=document.getElementById('mys-who-sel');mysWho=s?s.value:'';_mysRenderView();}
+function mysSetView(v){mysView=v;try{localStorage.setItem('creg_mys_view',v)}catch(e){}_mysSyncToggle();_mysRenderView();}
+function _mysFillWho(){
+  const msel=document.getElementById('mys-month-sel'),wsel=document.getElementById('mys-who-sel');
+  if(!wsel)return;const key=msel?msel.value:'';const pub=pubScheds[key];
+  let staff=pub?deriveStaffFromSched(_mysMonthDays(pub,key),pub.sched):(staffList||[]).map(sl=>({key:sl.name.toUpperCase().replace(/[\s,]+/g,'_'),nick:sl.name,isTL:false}));
+  staff=staff.slice().sort((a,b)=>a.nick.localeCompare(b.nick));
+  const prev=wsel.value;
+  wsel.innerHTML='';
+  staff.forEach(s=>{const o=document.createElement('option');o.value=s.key;o.textContent=s.nick;wsel.appendChild(o);});
+  let want=prev;
+  if(!want||!staff.some(s=>s.key===want)){
+    const ck=currentUser?(SCHED_NICK[currentUser.toLowerCase()]||currentUser.toUpperCase().replace(/[\s,]+/g,'_')):'';
+    want=staff.some(s=>s.key===ck)?ck:(staff[0]?staff[0].key:'');
+  }
+  wsel.value=want;mysWho=want;
+}
+function _mysRenderView(){
+  const c=document.getElementById('mys-content');if(!c)return;
+  const msel=document.getElementById('mys-month-sel');const key=msel?msel.value:'';
+  const wsel=document.getElementById('mys-who-sel');if(wsel&&!wsel.options.length)_mysFillWho();
+  if(wsel)mysWho=wsel.value;
+  const pub=pubScheds[key];
+  if(!key||!pub){c.innerHTML=`<div class="mys-empty">📋<div>No published schedule for this month yet.</div></div>`;return;}
+  if(!mysWho){c.innerHTML=`<div class="mys-empty">👤<div>Select a name above.</div></div>`;return;}
+  c.innerHTML=mysView==='grid'?_mysBuildGrid(pub,key):_mysBuildAgenda(pub,key);
+}
+function _mysBuildAgenda(pub,key){
+  const days=_mysMonthDays(pub,key);const todayDk=_mysTodayDk();
+  const me=deriveStaffFromSched(days,pub.sched).find(s=>s.key===mysWho)||{key:mysWho,nick:nickForKey(mysWho),isTL:false};
+  const {work,rest,leave}=_mysTally(pub,days);
+  const anchor=days.some(d=>dsS(d)===todayDk)?todayDk:(days[0]?dsS(days[0]):null);
+  const anchorIsToday=anchor===todayDk;
+  let cur='—',nextOff='—';
+  if(anchor){const tc=_mysCell(pub,anchor,mysWho);if(tc)cur=tc.type==='shift'?`${tc.label}${tc.brk?` <small>· break ${tc.brk}</small>`:''}`:tc.label;}
+  for(const d of days){const dk=dsS(d);if(anchor&&dk<anchor)continue;const c=_mysCell(pub,dk,mysWho);if(c&&(c.type==='roff'||c.type==='vl'||c.type==='sl')){nextOff=_mysDowDate(d);break;}}
+  let rows='';
+  days.forEach(d=>{
+    const dk=dsS(d);const c=_mysCell(pub,dk,mysWho);const isT=dk===todayDk;
+    let mid;
+    if(!c)mid=`<span class="mys-chip off">—</span>`;
+    else if(c.type==='shift')mid=`<span class="mys-chip shift">${c.label}</span>${isT?'<span class="mys-today">TODAY</span>':''}<div class="mys-meta">${c.brk?`<span>☕ Break <b>${c.brk}</b></span>`:''}${c.task?`<span>📋 <b>${_mysTask(c.task)}</b></span>`:''}</div>`;
+    else mid=`<span class="mys-chip ${c.type}">${c.label}</span>${isT?'<span class="mys-today">TODAY</span>':''}`;
+    rows+=`<div class="mys-row${isT?' today':''}"><div class="mys-date"><div class="dow">${_MYS_DOW[d.getUTCDay()]}</div><div class="num">${d.getUTCDate()}</div></div><div class="mys-rmid">${mid}</div></div>`;
+  });
+  const team=_mysBuildTeam(pub,anchor,days);
+  return `
+   <div class="mys-hero">
+     <div class="mys-hero-top"><div class="mys-av">${_mysIni(me.nick)}</div><div><div class="mys-nm">${me.nick}${me.isTL?' 👑':''}</div><div class="mys-rl">Central Registration</div></div></div>
+     <div class="mys-hgrid"><div class="mys-hc"><div class="k">${anchorIsToday?'Today':'First day'}</div><div class="v">${cur}</div></div><div class="mys-hc"><div class="k">Next day off</div><div class="v">${nextOff}</div></div></div>
+   </div>
+   <div class="mys-tally"><div class="t"><div class="n">${work}</div><div class="l">Working</div></div><div class="t"><div class="n">${rest}</div><div class="l">Rest days</div></div><div class="t"><div class="n">${leave}</div><div class="l">Leave</div></div></div>
+   <div class="mys-sec">This month</div>
+   <div class="mys-agenda">${rows}</div>
+   ${team}`;
+}
+function _mysBuildTeam(pub,dk,days){
+  if(!dk)return '';
+  const d=new Date(dk+'T00:00:00Z');const staff=deriveStaffFromSched(days,pub.sched);
+  const on=[],off=[];
+  staff.forEach(s=>{const c=_mysCell(pub,dk,s.key);if(!c)return;(c.type==='shift'?on:off).push({s,c});});
+  if(!on.length&&!off.length)return '';
+  on.sort((a,b)=>a.s.nick.localeCompare(b.s.nick));off.sort((a,b)=>a.s.nick.localeCompare(b.s.nick));
+  const onH=on.map(({s,c})=>`<div class="mys-pill"><div class="mys-ini">${_mysIni(s.nick)}</div><div class="pn">${s.nick}${s.isTL?' · TL':''}</div><div class="ps">${c.label}${c.brk?' · ☕'+c.brk:''}</div></div>`).join('');
+  const offH=off.map(({s,c})=>`<div class="mys-pill"><div class="mys-ini">${_mysIni(s.nick)}</div><div class="pn">${s.nick}</div><div class="ps tag">${c.short}</div></div>`).join('');
+  return `<div class="mys-sec">Team on ${_mysDowDate(d)}</div>
+   <div class="mys-team"><div class="mys-team-head"><div class="ttl">Who's in</div><div class="mys-staffing ${on.length<=4?'warn':''}">${on.length} of ${on.length+off.length} on duty</div></div>
+   <div class="mys-tlabel">✅ On duty</div>${onH||'<div class="mys-none">—</div>'}
+   <div class="mys-tlabel" style="margin-top:10px">🌙 Off</div>${offH||'<div class="mys-none">—</div>'}</div>`;
+}
+function _mysBuildGrid(pub,key){
+  const days=_mysMonthDays(pub,key);
+  if(!days.length)return `<div class="mys-empty">📋<div>No schedule days.</div></div>`;
+  const todayDk=_mysTodayDk();const first=days[0];const firstDow=first.getUTCDay();
+  const y=parseInt(key.slice(0,4)),m=parseInt(key.slice(5,7));
+  const me=deriveStaffFromSched(days,pub.sched).find(s=>s.key===mysWho)||{nick:nickForKey(mysWho),isTL:false};
+  const {work,rest,leave}=_mysTally(pub,days);
+  const byNum={};days.forEach(d=>{byNum[d.getUTCDate()]=d;});
+  const lastNum=Math.max(...days.map(d=>d.getUTCDate()));
+  let cells='';
+  for(let i=0;i<firstDow;i++)cells+=`<div class="mys-cell pad"></div>`;
+  for(let n=1;n<=lastNum;n++){
+    const d=byNum[n];
+    if(!d){cells+=`<div class="mys-cell pad"><div class="dn">${n}</div></div>`;continue;}
+    const dk=dsS(d);const c=_mysCell(pub,dk,mysWho);const isT=dk===todayDk;
+    let inner;
+    if(!c)inner=`<div class="mys-gpill off">—</div>`;
+    else if(c.type==='shift')inner=`<div class="mys-gpill shift">${c.short}</div>${c.brk?`<div class="mys-gbrk">☕${c.brk}</div>`:''}`;
+    else inner=`<div class="mys-gpill ${c.type}">${c.short}</div>`;
+    cells+=`<div class="mys-cell${isT?' today':''}"><div class="dn">${n}</div>${inner}</div>`;
+  }
+  const used=firstDow+lastNum;const trail=(7-(used%7))%7;
+  for(let i=0;i<trail;i++)cells+=`<div class="mys-cell pad"></div>`;
+  return `
+   <div class="mys-hero"><div class="mys-hero-top"><div class="mys-av">${_mysIni(me.nick)}</div><div><div class="mys-nm">${me.nick}${me.isTL?' 👑':''}</div><div class="mys-rl">${MONTHS_S[m-1]} ${y}</div></div></div></div>
+   <div class="mys-cal"><div class="mys-gh"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div><div class="mys-cg">${cells}</div></div>
+   <div class="mys-tally"><div class="t"><div class="n">${work}</div><div class="l">Working</div></div><div class="t"><div class="n">${rest}</div><div class="l">Rest days</div></div><div class="t"><div class="n">${leave}</div><div class="l">Leave</div></div></div>
+   <div class="mys-legend"><span class="li"><span class="dot" style="background:#93C5FD"></span>Shift</span><span class="li"><span class="dot" style="background:#FCD34D"></span>Rest Day</span><span class="li"><span class="dot" style="background:#6EE7B7"></span>Leave</span><span class="li"><span class="dot" style="background:#CBD5E1"></span>Off</span></div>`;
+}
 
 function buildSatOffSummary(days,sched,year,month){
   // Only show current month's Saturdays (not bridge days)
