@@ -776,45 +776,39 @@ async function loadSBProds(){
 }
 
 // Change this string whenever seed data is corrected - forces full Supabase reset
-const DEPT_VERSION='v6-20260724-july';
 
 async function loadDeptRels(){
   if(!sb){DEPT_RELS=loadLocalDept();return;}
 
-  // Version-based reset: if version in localStorage differs, wipe Supabase and reseed
-  const storedVer=localStorage.getItem('creg_dv');
-  if(storedVer!==DEPT_VERSION){
-    toast('Refreshing dept data...','');
-    try{
-      await sb.from('dept_releases').delete().gt('year',0);
-    }catch(e){
-      // Try alternate delete
-      await sb.from('dept_releases').delete().neq('id','__none__');
-    }
-    for(let i=0;i<DEPT_SEED.length;i+=3){
-      await sb.from('dept_releases').insert(DEPT_SEED.slice(i,i+3));
-    }
-    localStorage.setItem('creg_dv',DEPT_VERSION);
-    DEPT_RELS=[...DEPT_SEED];
-    toast('Dept data refreshed','ok');
-    setSync('ok','Synced');
+  // Load whatever is already in Supabase (user-entered data lives here)
+  let sbRecs=[];
+  try{
+    const{data,error}=await sb.from('dept_releases').select('*');
+    if(error) throw error;
+    sbRecs=(data||[]).map(r=>({...r,items:typeof r.items==='string'?JSON.parse(r.items):(r.items||[])}));
+  }catch(e){
+    // If the read fails, fall back to local cache; NEVER wipe the table.
+    DEPT_RELS=loadLocalDept();
+    setSync('err','Offline');
     return;
   }
 
-  // Load from Supabase
-  const{data,error}=await sb.from('dept_releases').select('*');
-  if(error){DEPT_RELS=[...DEPT_SEED];return;}
-  const sbRecs=(data||[]).map(r=>({
-    ...r,items:typeof r.items==='string'?JSON.parse(r.items):(r.items||[])
-  }));
+  // Seed only the baseline months that are genuinely MISSING.
+  // We never delete, never overwrite: user data (e.g. August) is preserved.
   const sbIds=new Set(sbRecs.map(r=>r.id));
   const miss=DEPT_SEED.filter(r=>!sbIds.has(r.id));
   if(miss.length){
-    for(let i=0;i<miss.length;i+=3){
-      await sb.from('dept_releases').insert(miss.slice(i,i+3));
-    }
+    try{
+      for(let i=0;i<miss.length;i+=3){
+        await sb.from('dept_releases').insert(miss.slice(i,i+3));
+      }
+      sbRecs=sbRecs.concat(miss);
+    }catch(e){ /* insert failure is non-fatal; show what we have */ }
   }
-  DEPT_RELS=miss.length?[...miss,...sbRecs]:sbRecs;
+
+  DEPT_RELS=sbRecs;
+  saveLocalDept(DEPT_RELS);   // keep a local backup copy
+  setSync('ok','Synced');
 }
 
 function loadLocalOrders(){try{const s=JSON.parse(localStorage.getItem(LS.orders)||'[]');const ids=new Set(s.map(o=>o.id));return[...SEED.filter(o=>!ids.has(o.id)),...s];}catch(e){return[...SEED];}}
@@ -827,12 +821,8 @@ function migrateItem(it){
 }
 function loadLocalDept(){
   try{
-    // Version check for local storage too
-    if(localStorage.getItem('creg_dv')!==DEPT_VERSION){
-      localStorage.removeItem(LS.dept);
-      localStorage.setItem('creg_dv',DEPT_VERSION);
-      return[...DEPT_SEED];
-    }
+    // Additive only: merge saved cache with any missing baseline seed.
+    // Never wipe the cache - user-entered months (e.g. August) must survive.
     const raw=JSON.parse(localStorage.getItem(LS.dept)||'[]');
     const s=raw.map(r=>({...r,items:(typeof r.items==='string'?JSON.parse(r.items):(r.items||[])).map(migrateItem)}));
     const ids=new Set(s.map(r=>r.id));
