@@ -2360,6 +2360,12 @@ function renderOnCallSection(yr,mv,isApproved){
     if(mv!=='all'&&(km-1)!==parseInt(mv))return;
     if(!pub.taskSched)return;
     Object.entries(pub.taskSched).forEach(([dk,tasks])=>{
+      // Bridge-day guard: a published month also stores adjacent-month "bridge"
+      // days (e.g. August's schedule holds Sep 1–6 to finish its last week). Those
+      // copies can be STALE after the real month is regenerated or overridden.
+      // Count each date only from its OWN month's published schedule, so an override
+      // in the real month isn't undone by a stale bridge copy in the neighbor month.
+      if(dk.slice(0,7)!==key)return;
       Object.entries(tasks).forEach(([staffKey,task])=>{
         if(task==='ONCALL'&&byStaff[staffKey]){
           const uniqKey=staffKey+'|'+dk;
