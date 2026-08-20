@@ -382,7 +382,8 @@ tbody tr:hover td{background:var(--paper)}
 
 <div class="shell" id="mainShell" style="display:none">
 <nav class="sb" id="sidebar">
-  <div class="sb-logo"><div class="sb-name">CREG Supply</div><div class="sb-sub">Central Registration and Releasing</div></div>
+  <div class="sb-logo"><div class="sb-name">CREG Supply</div><div class="sb-sub">Central Registration and Releasing</div>
+      <div class="sb-sub" style="font-size:9px;opacity:.5;margin-top:2px">BUILD 2026-08-11b · non-destructive</div></div>
   <div class="snav">
     <div class="ssc">Live</div>
     <div class="si active" onclick="go('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</div>
@@ -515,6 +516,7 @@ tbody tr:hover td{background:var(--paper)}
         <select class="fs" id="drYrSel" onchange="renderDept()" style="width:80px"><option>2026</option><option>2027</option></select>
         <button class="btn bo bsm" onclick="exportDeptSummary()">Export Summary</button>
         <button class="btn bo bsm" onclick="showDeptAnalytics()">Analytics</button>
+        <button class="btn bo bsm" id="restoreAugBtn" onclick="restoreAugust()" style="border-color:var(--am);color:var(--am)">Restore August</button>
         <button class="btn bpri bsm" onclick="openDr()">+ Add Request</button>
       </div>
     </div>
@@ -1443,6 +1445,25 @@ function toggleCatRow(idx){
   else{qty.disabled=true;notes.disabled=true;qty.style.opacity='.4';notes.style.opacity='.4';row.classList.remove('checked');qty.value='';notes.value='';}
 }
 function syncCatRow(idx){}
+
+async function restoreAugust(){
+  if(!confirm('Restore the 13 August 2026 department requests?\n\nLaboratory (11), Radiology (6), CVDL Heart Station (4).\nSafe to run once; duplicates are skipped.'))return;
+  const AUG=[{"id": "rel-aug2026-lab", "year": 2026, "month": 8, "department": "Laboratory", "items": [{"id": "eba215c79bd9", "name": "Bond Paper White, Short, Laser", "qty": 3, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "363f142d9b57", "name": "Form; FM-MMC-Statement of Account (SOA)", "qty": 3, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "349dd8548acf", "name": "Thermal Paper Roll 54x2\" (QMS Ticket 5's)", "qty": 2, "unit": "SETS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "e07407d52d77", "name": "Toner HP-CF276XC (QUARTZ)", "qty": 2, "unit": "PCS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "7a93463bca54", "name": "Pre-Blood Extraction Form", "qty": 2, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "5544fb0fda10", "name": "Laboratory Results Paper", "qty": 3, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "dd2d17fe07a5", "name": "Results Envelope", "qty": 3, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "925e06166350", "name": "Urine Specimen Bottle", "qty": 2, "unit": "BOX", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "ddafea878b06", "name": "Conical Container", "qty": 10, "unit": "PCS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "26709ff1c38a", "name": "Specimen Label Sticker", "qty": 2, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "16cbf158fc99", "name": "Ziplock", "qty": 2, "unit": "PACKS", "notes": "", "received": false, "received_qty": 0, "received_at": null}], "created_at": "2026-08-01T00:00:00"}, {"id": "rel-aug2026-rad", "year": 2026, "month": 8, "department": "Radiology", "items": [{"id": "eba215c79bd9", "name": "Bond Paper White, Short, Laser", "qty": 3, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "363f142d9b57", "name": "Form; FM-MMC-Statement of Account (SOA)", "qty": 3, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "349dd8548acf", "name": "Thermal Paper Roll 54x2\" (QMS Ticket 5's)", "qty": 2, "unit": "SETS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "e07407d52d77", "name": "Toner HP-CF276XC (QUARTZ)", "qty": 2, "unit": "PCS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "dd2d17fe07a5", "name": "Results Envelope", "qty": 3, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "6e1c94f648df", "name": "Carbon Paper", "qty": 1, "unit": "PACK", "notes": "", "received": false, "received_qty": 0, "received_at": null}], "created_at": "2026-08-01T00:00:00"}, {"id": "rel-aug2026-cvdl", "year": 2026, "month": 8, "department": "CVDL Heart Station", "items": [{"id": "099f36cbda64", "name": "Bond Paper White, Short, Laser", "qty": 1, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "e03d642f4ce0", "name": "Form; FM-MMC-Statement of Account (SOA)", "qty": 1, "unit": "REAMS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "6855fa0d813d", "name": "Thermal Paper Roll 54x2\" (QMS Ticket 5's)", "qty": 1, "unit": "SETS", "notes": "", "received": false, "received_qty": 0, "received_at": null}, {"id": "c8d158906477", "name": "Toner HP-CF276XC (QUARTZ)", "qty": 1, "unit": "PCS", "notes": "", "received": false, "received_qty": 0, "received_at": null}], "created_at": "2026-08-01T00:00:00"}];
+  try{
+    const existing=new Set((DEPT_RELS||[]).map(r=>r.id));
+    if(sb){try{const{data}=await sb.from('dept_releases').select('id');(data||[]).forEach(r=>existing.add(r.id));}catch(e){}}
+    const toAdd=AUG.filter(r=>!existing.has(r.id));
+    if(!toAdd.length){toast('August already present','ok');document.getElementById('restoreAugBtn')?.remove();return;}
+    if(sb){const{error}=await sb.from('dept_releases').insert(toAdd);if(error){toast('Restore failed: '+error.message,'err');return;}}
+    DEPT_RELS=[...toAdd,...(DEPT_RELS||[])];
+    saveLocalDept(DEPT_RELS);
+    const moSel=document.getElementById('drMoSel'),yrSel=document.getElementById('drYrSel');
+    if(moSel)moSel.value=8; if(yrSel)yrSel.value=2026;
+    renderDept(); updateBadges();
+    toast('August restored — '+toAdd.length+' request(s)','ok');
+    document.getElementById('restoreAugBtn')?.remove();
+  }catch(e){toast('Restore error: '+e.message,'err');}
+}
 
 async function saveDeptReq(){
   const month=parseInt(document.getElementById('drMo').value);
