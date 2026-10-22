@@ -175,6 +175,10 @@ tbody tr:hover td{background:var(--paper)}
 .progbar>span{display:block;height:100%;border-radius:3px;transition:width .25s}
 .rolltag{font-size:9px;color:var(--pu2);background:var(--pul);padding:1px 5px;border-radius:8px;font-weight:700;margin-left:4px;letter-spacing:.3px}
 .ditem.rovr{background:color-mix(in srgb,var(--pul) 30%,var(--surface));border-left:3px solid var(--pu2)}
+/* "+ Add as new item" row in catalog autocomplete */
+.aci.acnew{background:var(--grl);border-top:1px dashed var(--grm)}
+.aci.acnew:hover{background:color-mix(in srgb,var(--grl) 70%,#fff)}
+.aci.acnew .acn{color:var(--gr2);font-weight:700}
 
 /* FILTERS */
 .filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
@@ -408,6 +412,44 @@ tbody tr:hover td{background:var(--paper)}
   </div>
 </div>
 
+<!-- NEW PRODUCT MODAL (add a product not yet in the catalog, from the request flow) -->
+<div class="mbg" id="newProdModal">
+  <div class="modal" style="max-width:500px">
+    <div class="mtitle">Add New Supply Item</div>
+    <div style="background:var(--grl);border:1px solid var(--grm);border-radius:var(--rs);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--gr2)">
+      Not in your catalog yet. Fill in the details — this item will be saved and auto-selected for your request.
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <label class="fl">Supply name *</label>
+      <input class="fi" id="npName" placeholder="e.g. TAPE; PACKAGING, CLEAR, 2 INCH">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="fg">
+        <label class="fl">Category *</label>
+        <select class="fs" id="npCat">
+          <option value="Office Supplies">Office Supplies</option>
+          <option value="Housekeeping">Housekeeping</option>
+          <option value="Medical/Forms">Medical/Forms</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Unit *</label>
+        <input class="fi" id="npUnit" placeholder="PCS / BOX / REAMS / GAL" style="text-transform:uppercase">
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:18px">
+      <label class="fl">Unit Cost (₱) *</label>
+      <input class="fi" type="number" id="npCost" min="0" step="0.01" placeholder="e.g. 85.50">
+      <div style="font-size:11px;color:var(--ink3);margin-top:4px">Enter 0 if cost is unknown — you can update it later in Products & Prices.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn bpri" onclick="submitNewProd()">Add &amp; Use</button>
+      <button class="btn bo" onclick="closeNewProd()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- QUICK ADD ITEM MODAL (add a single line item to an existing dept request) -->
 <div class="mbg" id="qaddModal">
   <div class="modal" style="max-width:500px">
@@ -473,7 +515,7 @@ tbody tr:hover td{background:var(--paper)}
     <div class="si" onclick="go('analytics')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Analytics</div>
     <div class="si" onclick="go('alerts')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>Alerts<span class="sbc" id="navAlerts" style="display:none">0</span></div>
   </div>
-  <div class="sfooter"><span class="dot"></span><span id="sbMode">Connecting...</span><div style="font-size:9px;color:rgba(255,255,255,.35);margin-top:4px;letter-spacing:.4px">BUILD 2026-10-22b · quick add + delete + Jan-Nov seed baked</div></div>
+  <div class="sfooter"><span class="dot"></span><span id="sbMode">Connecting...</span><div style="font-size:9px;color:rgba(255,255,255,.35);margin-top:4px;letter-spacing:.4px">BUILD 2026-10-22c · tracker delete + add-new-item + Jan-Nov seed baked</div></div>
 </nav>
 
 <div class="main">
@@ -1015,15 +1057,28 @@ function setCF(cat){
   }
 }
 function acSearch(){
-  const q=document.getElementById('fSearch').value.toLowerCase().trim();
+  const q=document.getElementById('fSearch').value.trim();
+  const qLow=q.toLowerCase();
   const list=document.getElementById('acList');
   if(!q&&!_cf){list.classList.remove('open');return;}
   const hits=PRODUCTS.filter(p=>
     (!_cf||p.category===_cf)&&
-    (!q||p.name.toLowerCase().includes(q)||p.code.toLowerCase().includes(q)||p.category.toLowerCase().includes(q))
+    (!qLow||p.name.toLowerCase().includes(qLow)||p.code.toLowerCase().includes(qLow)||p.category.toLowerCase().includes(qLow))
   ).slice(0,12);
-  if(!hits.length){list.innerHTML='<div style="padding:12px;font-size:12px;color:var(--ink3)">No items found</div>';list.classList.add('open');return;}
-  list.innerHTML=hits.map(p=>'<div class="aci" data-code="'+p.code+'"><div><div class="acn">'+p.name+'</div><div class="acm"><span class="acc">'+p.code+'</span>'+catBadge(p.category)+'</div></div><span class="acp">'+fmt(p.cost)+'</span></div>').join('');
+  const safeQ=q.replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  // Build hits list; always append an "Add as new item" row when there's a query
+  // so you can add items the catalog doesn't have yet (e.g. one-off supplies).
+  const addNewRow=q?('<div class="aci acnew" data-newitem="1" data-q="'+safeQ+'">'
+    +'<div><div class="acn">+ Add "'+safeQ+'" as new item</div>'
+    +'<div class="acm" style="color:var(--ink3)">Opens a form to set category, unit, and cost</div></div>'
+    +'<span class="acp" style="color:var(--gr2);font-weight:700">NEW</span></div>'):'';
+  if(!hits.length){
+    list.innerHTML='<div style="padding:12px;font-size:12px;color:var(--ink3)">No matches in catalog</div>'+addNewRow;
+    list.classList.add('open');
+    acIdx=-1;
+    return;
+  }
+  list.innerHTML=hits.map(p=>'<div class="aci" data-code="'+p.code+'"><div><div class="acn">'+p.name+'</div><div class="acm"><span class="acc">'+p.code+'</span>'+catBadge(p.category)+'</div></div><span class="acp">'+fmt(p.cost)+'</span></div>').join('')+addNewRow;
   list.classList.add('open');acIdx=-1;
 }
 function acPick(code){
@@ -1034,8 +1089,86 @@ function acPick(code){
   document.getElementById('afCost').textContent=fmt(p.cost)+' / '+p.unit;
   calcTot();checkDup();
 }
+
+// ============================================================
+// NEW PRODUCT (opened from the autocomplete "+ Add new" row)
+// Purpose: let user add catalog items on the fly instead of going
+//          to Products & Prices tab to create them first
+// Edge   : generates a non-colliding code; saves to Supabase+local;
+//          auto-selects for the pending request
+// ============================================================
+function openNewProd(prefillName){
+  document.getElementById('npName').value=prefillName||'';
+  document.getElementById('npCat').value=_cf||'Office Supplies';
+  document.getElementById('npUnit').value='';
+  document.getElementById('npCost').value='';
+  document.getElementById('acList').classList.remove('open');
+  document.getElementById('newProdModal').classList.add('open');
+  setTimeout(()=>{
+    const name=document.getElementById('npName');
+    if(prefillName){document.getElementById('npUnit').focus();}
+    else name.focus();
+  },50);
+}
+function closeNewProd(){document.getElementById('newProdModal').classList.remove('open');}
+
+// Finds the next available CUSTOM-NNN code. Uses zero-padded 3-digit suffix
+// to keep codes sortable alongside OFFICE/HK series.
+function nextCustomCode(){
+  const nums=PRODUCTS.map(p=>{const m=(p.code||'').match(/^CUSTOM-(\d+)$/);return m?parseInt(m[1]):0;});
+  const next=(nums.length?Math.max.apply(null,nums):0)+1;
+  return 'CUSTOM-'+String(next).padStart(3,'0');
+}
+
+async function submitNewProd(){
+  const name=document.getElementById('npName').value.trim();
+  const cat=document.getElementById('npCat').value;
+  const unit=document.getElementById('npUnit').value.trim().toUpperCase();
+  const costStr=document.getElementById('npCost').value;
+  const cost=parseFloat(costStr);
+
+  if(!name){toast('Enter a supply name','warn');return;}
+  if(!unit){toast('Enter a unit (e.g. PCS, BOX, REAMS)','warn');return;}
+  if(isNaN(cost)||cost<0){toast('Enter a valid cost (use 0 if unknown)','warn');return;}
+
+  // Duplicate check: exact-name match in same category (case-insensitive)
+  const dup=PRODUCTS.find(p=>p.name.trim().toLowerCase()===name.toLowerCase()&&p.category===cat);
+  if(dup){
+    if(!confirm('"'+name+'" already exists in '+cat+' (code '+dup.code+').\n\nUse the existing item instead?'))return;
+    closeNewProd();
+    acPick(dup.code);
+    return;
+  }
+
+  const code=nextCustomCode();
+  const prod={code,name,cost,unit,category:cat};
+
+  // Persist to Supabase first (if available), then update local state
+  if(sb){
+    const{error}=await sb.from('products').upsert([prod]);
+    if(error){toast('Save failed: '+error.message,'err');return;}
+  }
+  PRODUCTS.push(prod);
+  saveLocalProds(PRODUCTS);
+
+  toast('"'+name.substring(0,30)+'" added to catalog','ok');
+  closeNewProd();
+
+  // Auto-select the new item for the request in progress
+  acSel=prod;
+  document.getElementById('fSearch').value=prod.name;
+  document.getElementById('afCode').textContent=prod.code;
+  document.getElementById('afCat').innerHTML=catBadge(prod.category);
+  document.getElementById('afCost').textContent=fmt(prod.cost)+' / '+prod.unit;
+  calcTot();checkDup();
+  // Nudge focus to Qty field so user can continue the request
+  const qtyEl=document.getElementById('fQty');
+  if(qtyEl)qtyEl.focus();
+}
 // Autocomplete item click via event delegation
 document.addEventListener('mousedown',function(e){
+  const newItem=e.target.closest('.aci[data-newitem]');
+  if(newItem){openNewProd(newItem.getAttribute('data-q')||'');return;}
   const item=e.target.closest('.aci[data-code]');
   if(item)acPick(item.getAttribute('data-code'));
 });
@@ -1135,28 +1268,74 @@ function actionBtn(o){
   const key = 'o_'+o.id.replace(/[^a-zA-Z0-9]/g,'_');
   window._orderMap[key] = o;
   const r=CU.role;
+  // Delete button rules (returned as HTML suffix appended to primary action):
+  //   TL  → can delete anything (incl. received, in case of mis-entry)
+  //   PSS → can delete only their own request while still in "Requested"
+  const canDelete = (r==='TL') || (r==='PSS' && o.status==='Requested' && o.requested_by===CU.username);
+  const delBtn = canDelete
+    ? '<button class="btn bo bxs" style="font-size:10px;padding:2px 7px;margin-left:4px;color:var(--rd)" onclick="deleteOrder(\''+o.id+'\')" title="Delete this request">🗑</button>'
+    : '';
 
   // TL actions
   if(o.status==='Requested'&&r==='TL')
-    return '<button class="stb sbo" onclick="btnAct(this);" data-key="'+key+'" data-ns="Ordered" data-title="Mark as Ordered">Mark Ordered</button>';
+    return '<button class="stb sbo" onclick="btnAct(this);" data-key="'+key+'" data-ns="Ordered" data-title="Mark as Ordered">Mark Ordered</button>'+delBtn;
   if(o.status==='Ordered'&&r==='TL')
-    return '<button class="stb sbp" onclick="btnAct(this);" data-key="'+key+'" data-ns="For Pickup" data-title="Ready for Pickup">Ready for Pickup</button>';
+    return '<button class="stb sbp" onclick="btnAct(this);" data-key="'+key+'" data-ns="For Pickup" data-title="Ready for Pickup">Ready for Pickup</button>'+delBtn;
   if(o.status==='For Pickup'&&r==='TL')
-    return '<span style="font-size:11px;color:var(--ink4)">Awaiting PSS pickup</span>';
+    return '<span style="font-size:11px;color:var(--ink4)">Awaiting PSS pickup</span>'+delBtn;
 
   // PSS actions
   if(o.status==='Requested'&&r==='PSS')
-    return '<span style="font-size:11px;color:var(--ink4)">Awaiting TL</span>';
+    return '<span style="font-size:11px;color:var(--ink4)">Awaiting TL</span>'+delBtn;
   if(o.status==='Ordered'&&r==='PSS')
-    return '<span style="font-size:11px;color:var(--ink4)">Awaiting TL</span>';
+    return '<span style="font-size:11px;color:var(--ink4)">Awaiting TL</span>'+delBtn;
   if(o.status==='For Pickup'&&r==='PSS')
-    return '<button class="stb sbr" onclick="btnAct(this);" data-key="'+key+'" data-ns="Received" data-title="Mark as Received">Mark Received</button>';
+    return '<button class="stb sbr" onclick="btnAct(this);" data-key="'+key+'" data-ns="Received" data-title="Mark as Received">Mark Received</button>'+delBtn;
 
   // Done
   if(o.status==='Received')
-    return '<span style="font-size:11px;color:var(--gr2);font-weight:600">Done</span>';
+    return '<span style="font-size:11px;color:var(--gr2);font-weight:600">Done</span>'+delBtn;
 
-  return '-';
+  return '-'+delBtn;
+}
+
+// ============================================================
+// DELETE ORDER (Order Tracker row delete)
+// Confirmation stringency scales with status:
+//   Requested → simple confirm (not yet acted on)
+//   Ordered / For Pickup / Received → extra confirmation (money/audit impact)
+// ============================================================
+async function deleteOrder(id){
+  const o=ORDERS.find(x=>x.id===id);if(!o){toast('Order not found','err');return;}
+  // Permission check (defense in depth — button is also gated in actionBtn)
+  if(CU.role==='PSS' && !(o.status==='Requested' && o.requested_by===CU.username)){
+    toast('You can only delete your own pending requests','warn');return;
+  }
+  const stageWarn={
+    'Requested':'',
+    'Ordered':'\n\nWARNING: This order has already been placed with the supplier (marked Ordered by '+(o.ordered_by||'TL')+'). Deleting removes it from the audit trail.',
+    'For Pickup':'\n\nWARNING: This order is ready for pickup. Deleting removes it from the audit trail and may cause confusion with the warehouse.',
+    'Received':'\n\nWARNING: This order was already received. Deleting removes it from history and will affect reports and consumption analytics.'
+  }[o.status]||'';
+  const msg='Delete this request?\n\n'
+    +o.supply+'\n'
+    +o.qty+' '+(o.unit||'')+' @ '+fmt(o.unit_cost)+' = '+fmt(o.total)+'\n'
+    +'Date: '+o.date+'  |  By: '+(o.requested_by||'-')+'  |  Status: '+o.status
+    +stageWarn
+    +'\n\nThis cannot be undone.';
+  if(!confirm(msg))return;
+
+  if(sb){
+    const{error}=await sb.from('orders').delete().eq('id',id);
+    if(error){toast('Delete failed: '+error.message,'err');return;}
+    await loadOrders();
+  } else {
+    ORDERS=ORDERS.filter(x=>x.id!==id);
+    saveLocalOrders(ORDERS);
+  }
+  toast('Request deleted','ok');
+  renderTracker();renderAudit();updateBadges();
+  if(document.getElementById('page-dash').classList.contains('active'))renderDash();
 }
 
 // Global button handler - called directly via onclick attribute
